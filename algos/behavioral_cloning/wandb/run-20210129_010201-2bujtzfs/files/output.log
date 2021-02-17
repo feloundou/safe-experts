@@ -1,0 +1,149 @@
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+1000/1000
+100/1000
+200/1000
+300/1000
+400/1000
+500/1000
+600/1000
+700/1000
+800/1000
+900/1000
+Traceback (most recent call last):
+  File "/home/tyna/Documents/openai/research-project/algos/behavioral_cloning/behavioral_clones.py", line 64, in <module>
+    marigold_clone_distill.run_clone_sim(env, record_clone=True, num_episodes=100, render=False, input_vector=[1,0])
+  File "/home/tyna/Documents/openai/research-project/algos/clone_utils.py", line 369, in run_clone_sim
+    a = self.clone_policy(torch.tensor(appended_obs).float())
+  File "/home/tyna/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/home/tyna/Documents/openai/research-project/algos/ppo_algos.py", line 152, in forward
+    out = F.leaky_relu(self.shared_net(x))
+  File "/home/tyna/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/home/tyna/.local/lib/python3.8/site-packages/torch/nn/modules/container.py", line 117, in forward
+    input = module(input)
+  File "/home/tyna/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+    result = self.forward(*input, **kwargs)
+  File "/home/tyna/.local/lib/python3.8/site-packages/torch/nn/modules/linear.py", line 93, in forward
+    return F.linear(input, self.weight, self.bias)
+  File "/home/tyna/.local/lib/python3.8/site-packages/torch/nn/functional.py", line 1692, in linear
+    output = input.matmul(weight.t())
+KeyboardInterrupt

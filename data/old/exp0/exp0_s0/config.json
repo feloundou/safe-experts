@@ -1,0 +1,68 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "actor_critic":	"MLPActorCritic",
+    "agent":	{
+        "<agent_types.PPOAgent object at 0x7efbc934ecd0>":	{
+            "clip_ratio":	0.2,
+            "kl_margin":	1.2,
+            "params":	{
+                "clipped_adv":	true,
+                "constrained":	false,
+                "first_order":	true
+            },
+            "pi_iters":	80,
+            "pi_lr":	0.0003
+        }
+    },
+    "clip_ratio":	0.2,
+    "constrain_mode":	true,
+    "cost_gamma":	0.99,
+    "cost_lam":	0.97,
+    "cost_lim":	10,
+    "ent_reg":	0.0,
+    "env_fn":	"<function safe_ppo_train.<locals>.<lambda> at 0x7efbe03a9280>",
+    "epochs":	50,
+    "exp_name":	"exp0",
+    "gamma":	0.98,
+    "hazards_cost":	1,
+    "lam":	0.98,
+    "logger":	{
+        "<spinup_utils.EpochLogger object at 0x7efbe0eb12b0>":	{
+            "epoch_dict":	{},
+            "exp_name":	"exp0",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/openai/research-project/data/exp0/exp0_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/openai/research-project/data/exp0/exp0_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"exp0",
+        "output_dir":	"/home/tyna/Documents/openai/research-project/data/exp0/exp0_s0"
+    },
+    "max_ep_len":	1000,
+    "modify_env":	true,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.005,
+    "pi_lr":	0.0003,
+    "reward_goal":	1,
+    "save_every":	10,
+    "seed":	0,
+    "steps_per_epoch":	10000,
+    "target_kl":	0.01,
+    "train_pi_iters":	80,
+    "train_v_iters":	80,
+    "vf_lr":	0.001
+}

@@ -1,0 +1,63 @@
+{
+    "clip_ratio":	0.2,
+    "cost_lim":	0,
+    "env_fn":	"<function <lambda> at 0x7f1cc1fd5c10>",
+    "epochs":	1000,
+    "exp_name":	"buttercup",
+    "gamma":	1,
+    "lam":	0.95,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f1d297deaf0>":	{
+            "epoch_dict":	{},
+            "exp_name":	"buttercup",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/openai/research-project/data/buttercup/buttercup_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/openai/research-project/data/buttercup/buttercup_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"buttercup",
+        "output_dir":	"/home/tyna/Documents/openai/research-project/data/buttercup/buttercup_s0"
+    },
+    "max_ep_len":	1000,
+    "penalty_lr":	0.001,
+    "pi_lr":	0.0003,
+    "save_every":	10,
+    "self":	{
+        "<agent_utils.Expert object at 0x7f1d2d0113a0>":	{
+            "_clone_path":	"/home/tyna/Documents/openai/research-project/clone_data/",
+            "_demo_dir":	"/home/tyna/Documents/openai/research-project/expert_data/buttercup_episodes/",
+            "_expert_path":	"/home/tyna/Documents/openai/research-project/expert_data/",
+            "_project_dir":	"/home/tyna/Documents/openai/research-project/",
+            "_root_data_path":	"/home/tyna/Documents/openai/research-project/data/",
+            "ac_kwargs":	{
+                "hidden_sizes":	[
+                    256,
+                    256,
+                    256,
+                    256
+                ]
+            },
+            "actor_critic":	"MLPActorCritic",
+            "config_name":	"buttercup",
+            "file_name":	"ppo_penalized_buttercup_128x4",
+            "max_steps":	1000,
+            "penalty_init":	0.005,
+            "penalty_init_param":	-5.295816324881608,
+            "record_samples":	true,
+            "replay_buffer":	null,
+            "seed":	0
+        }
+    },
+    "steps_per_epoch":	20000,
+    "train_pi_iters":	100,
+    "train_vf_iters":	100,
+    "vf_lr":	0.001,
+    "wandb_write":	false
+}

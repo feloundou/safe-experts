@@ -1,0 +1,50 @@
+{
+    "ac_kwargs":	{
+        "hidden_dims":	[
+            64,
+            64
+        ]
+    },
+    "actor_critic":	"ActorCritic",
+    "dc_kwargs":	{
+        "hidden_dims":	[
+            64,
+            64
+        ]
+    },
+    "dc_lr":	0.0005,
+    "disc":	"Discriminator",
+    "env_fn":	"<function <lambda> at 0x7f21ebc4c940>",
+    "episodes_per_epoch":	5,
+    "epochs":	1000,
+    "exp_name":	"gail-anonymous-expert",
+    "gamma":	0.99,
+    "l_lam":	0,
+    "lam":	0.97,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f21ebc51490>":	{
+            "epoch_dict":	{},
+            "exp_name":	"gail-anonymous-expert",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/openai/research-project/data/gail-anonymous-expert/gail-anonymous-expert_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/openai/research-project/data/gail-anonymous-expert/gail-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"gail-anonymous-expert",
+        "output_dir":	"/home/tyna/Documents/openai/research-project/data/gail-anonymous-expert/gail-anonymous-expert_s0"
+    },
+    "max_ep_len":	1000,
+    "pi_lr":	0.003,
+    "save_freq":	10,
+    "seed":	0,
+    "train_dc_iters":	80,
+    "train_v_iters":	80,
+    "vf_lr":	0.003
+}

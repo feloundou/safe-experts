@@ -1,0 +1,63 @@
+{
+    "clip_ratio":	0.2,
+    "cost_lim":	10,
+    "env_fn":	"<function <lambda> at 0x7f6b41d25dc0>",
+    "epochs":	50,
+    "exp_name":	"STANDARDTEST",
+    "gamma":	0.99,
+    "lam":	0.98,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f6bb4353610>":	{
+            "epoch_dict":	{},
+            "exp_name":	"STANDARDTEST",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/openai/research-project/data/STANDARDTEST/STANDARDTEST_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/openai/research-project/data/STANDARDTEST/STANDARDTEST_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"STANDARDTEST",
+        "output_dir":	"/home/tyna/Documents/openai/research-project/data/STANDARDTEST/STANDARDTEST_s0"
+    },
+    "max_ep_len":	1000,
+    "penalty_lr":	0.005,
+    "pi_lr":	0.0003,
+    "save_every":	10,
+    "self":	{
+        "<agent_utils.Expert object at 0x7f6bbf53ce20>":	{
+            "_clone_path":	"/home/tyna/Documents/openai/research-project/clone_data/",
+            "_demo_dir":	"/home/tyna/Documents/openai/research-project/expert_data/wonder_episodes/",
+            "_expert_path":	"/home/tyna/Documents/openai/research-project/expert_data/",
+            "_project_dir":	"/home/tyna/Documents/openai/research-project/",
+            "_root_data_path":	"/home/tyna/Documents/openai/research-project/data/",
+            "ac_kwargs":	{
+                "hidden_sizes":	[
+                    128,
+                    128,
+                    128,
+                    128
+                ]
+            },
+            "actor_critic":	"MLPActorCritic",
+            "config_name":	"wonder",
+            "file_name":	"ppo_penalized_wonder_128x4",
+            "max_steps":	1000,
+            "penalty_init":	0.005,
+            "penalty_init_param":	-5.295816324881608,
+            "record_samples":	true,
+            "replay_buffer":	null,
+            "seed":	0
+        }
+    },
+    "steps_per_epoch":	5000,
+    "train_pi_iters":	100,
+    "train_vf_iters":	100,
+    "vf_lr":	0.001,
+    "wandb_write":	false
+}

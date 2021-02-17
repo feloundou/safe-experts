@@ -1,0 +1,22 @@
+{
+    "os": "Linux-5.8.0-38-generic-x86_64-with-glibc2.29",
+    "python": "3.8.5",
+    "heartbeatAt": "2021-01-29T06:02:02.201152",
+    "startedAt": "2021-01-29T06:02:01.093771",
+    "docker": null,
+    "cpu_count": 4,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "codePath": "algos/behavioral_cloning/behavioral_clones.py",
+    "program": "/home/tyna/Documents/openai/research-project/algos/behavioral_cloning/behavioral_clones.py",
+    "git": {
+        "remote": "https://github.com/feloundou/research-project.git",
+        "commit": "b90c293bb8adfc29b09ac2d61b789f46cb31a535"
+    },
+    "email": "mfe25@cornell.edu",
+    "root": "/home/tyna/Documents/openai/research-project",
+    "host": "tyna-server",
+    "username": "tyna",
+    "executable": "/usr/bin/python3.8"
+}
