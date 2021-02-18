@@ -1,0 +1,22 @@
+{
+    "os": "Linux-5.8.0-43-generic-x86_64-with-glibc2.29",
+    "python": "3.8.5",
+    "heartbeatAt": "2021-02-18T00:27:22.071287",
+    "startedAt": "2021-02-18T00:27:21.114382",
+    "docker": null,
+    "cpu_count": 4,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "codePath": "algos/train_expert_valor_penalized.py",
+    "program": "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py",
+    "git": {
+        "remote": "https://github.com/feloundou/safe-experts.git",
+        "commit": "d24e642408764c76211db02f20de151708c102a2"
+    },
+    "email": "mfe25@cornell.edu",
+    "root": "/home/tyna/Documents/safe-experts",
+    "host": "tyna-server",
+    "username": "tyna",
+    "executable": "/usr/bin/python3.8"
+}

@@ -152,6 +152,7 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
 
             con, s_diff = [torch.Tensor(x) for x in buffer.retrieve_dc_buff()]
             print("s diff: ", s_diff)
+            print("s diff shape: ", s_diff.shape)
             _, logp_dc, _ = discrim(s_diff, con)
             d_l_old = -logp_dc.mean()
 
@@ -249,7 +250,13 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
                 if terminal:
                     dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
                     con = torch.Tensor([float(c)]).unsqueeze(0)
-                    _, _, log_p = discrim(dc_diff, con)
+                    # _, _, log_p = discrim(dc_diff, con)
+                    _, log_p, _ = discrim(dc_diff, con)
+                    # look at the bug, should take the second output instead of log_p ///
+                    # instead of doing average over sequence dimension, do not need to average reward,
+                    # just give reward now
+                    # with pure VAE, do not have to calculate advantages
+
                     buffer.finish_path(log_p.detach().numpy())
                     logger.store(EpRet=ep_ret, EpCost=ep_cost, EpLen=ep_len)
 

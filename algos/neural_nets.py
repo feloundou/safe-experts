@@ -363,15 +363,16 @@ class ValorFFNNPolicy(nn.Module):
     def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
         super(ValorFFNNPolicy, self).__init__()
 
-        self.context_net = mlp([input_dim] + list(hidden_dims) , activation)
+        self.context_net = mlp([input_dim] + list(hidden_dims), activation)
         self.linear = nn.Linear(hidden_dims[-1], con_dim)
 
 
     def forward(self, seq, gt=None):
-
         inter_states = self.context_net(seq)
         logit_seq = self.linear(inter_states)
         # print(logit_seq)
+        # print("log sequence shape")
+        # print(logit_seq.shape)
         self.logits = torch.mean(logit_seq, dim=1)
         policy = Categorical(logits=self.logits)
         label = policy.sample()
@@ -384,6 +385,7 @@ class ValorFFNNPolicy(nn.Module):
             loggt = None
 
         return label, loggt, logp
+
 
 class ValorDiscriminator(nn.Module):
     def __init__(self, input_dim, context_dim, activation=nn.Softmax,

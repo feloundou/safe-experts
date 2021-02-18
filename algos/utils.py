@@ -1350,21 +1350,27 @@ class VALORBuffer(object):
         self.lgt[self.ptr] = lgt
         self.ptr += 1
 
-    def calc_diff(self):
+    def calc_diff(self):   # make life easier and calculate the difference before passing to buffer
         # Store differences into a specific memory
         # TODO: convert this into vector operation
         start = int(self.end[self.eps])
         ep_l = self.ptr - start - 1
-        # for i in range(self.N-1):
-        for i in range(1000):
+        for i in range(self.N-1):
+        # for i in range(1000):
 
-            # prev = int(i*ep_l/(self.N-1))
-            # succ = int((i+1)*ep_l/(self.N-1))
+            prev = int(i*ep_l/(self.N-1))
+            succ = int((i+1)*ep_l/(self.N-1))
 
-            prev = int(i*ep_l)
-            succ = int((i+1)*ep_l)
-            print(prev)
-            print(succ)
+            # prev = int(i*ep_l)
+            # succ = int((i+1)*ep_l)
+
+            # print("previous:", prev)
+            # print("obs")
+            # print(self.obs[start + succ][:self.obs_dim].shape)
+            #
+            # print("successive:",succ)
+            # print("obs")
+            # print(self.obs[start + prev][:self.obs_dim])
 
             self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
 
