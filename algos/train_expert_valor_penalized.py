@@ -9,7 +9,7 @@ import os.path as osp
 
 from torch.distributions.categorical import Categorical
 
-from neural_nets import ActorCritic, ValorDiscriminator, count_vars, mpi_avg_grads
+from neural_nets import ActorCritic, ValorDiscriminator, count_vars, mpi_avg_grads, mpi_sum
 
 import wandb
 
@@ -27,7 +27,7 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
           train_dc_interv=10,
           lam=0.97,
           # Cost constraints / penalties:
-          cost_lim=25,
+          cost_lim=50,
           penalty_init=1.,
           penalty_lr=5e-3,
           clip_ratio=0.2,
@@ -107,11 +107,18 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
         return cur_penalty
 
     def update(e):
-        obs, act, adv, pos, ret, logp_old = [torch.Tensor(x) for x in buffer.retrieve_all()]
+        obs, act, adv, pos, ret, cost, logp_old = [torch.Tensor(x) for x in buffer.retrieve_all()]
+
+        # cur_cost = logger.get_stats('EpCost')[0]
+        # cur_rew = logger.get_stats('EpRet')[0]
+
+        mov_avg_ret = ret.sum(axis=-1)/(episodes_per_epoch)
+        mov_avg_cost = cost.sum(axis=-1)/(episodes_per_epoch)
 
         # Policy
-        _, logp, _ = ac.pi(obs, act)
-        entropy = (-logp).mean()
+        print("policy pull")
+        # _, logp, _ = ac.pi(obs, act)
+        # entropy = (-logp).mean()
 
         # Train policy with multiple steps of gradient descent
         for _ in range(train_pi_iters):
@@ -123,6 +130,7 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
 
 
         # Value function
+        print("value function pull")
         v = ac.v(obs)
         v_l_old = F.mse_loss(v, ret)
 
@@ -163,18 +171,31 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
             dc_l_new = 0
 
         # Log the changes
+        print("logging changes")
         _, logp, _, v = ac(obs, act)
+        # _, logp, _ = ac.pi(obs, act)
         pi_l_new = -(logp * (k * adv + pos)).mean()
         v_l_new = F.mse_loss(v, ret)
         kl = (logp_old - logp).mean()
         logger.store(LossPi=loss_pi, LossV=v_l_old, KL=kl,
-                     Entropy=entropy, DeltaLossPi=(pi_l_new - loss_pi),
-                     DeltaLossV=(v_l_new - v_l_old), LossDC=d_l_old,
+                     # Entropy=entropy,
+                     DeltaLossPi=(pi_l_new - loss_pi),
+                     DeltaLossV=(v_l_new - v_l_old),
+                     LossDC=d_l_old,
                      DeltaLossDC=(dc_l_new - d_l_old))
+
+        update_metrics = {'10p mov avg ret': mov_avg_ret,
+                          '10p mov avg cost': mov_avg_cost,
+                          'current penalty': cur_penalty
+                          }
+
+        wandb.log(update_metrics)
+
         # logger.store(Adv=adv.reshape(-1).numpy().tolist(), Pos=pos.reshape(-1).numpy().tolist())
 
     start_time = time.time()
-    o, r, d, ep_ret, ep_cost, ep_len = env.reset(), 0, False, 0, 0, 0
+    o, r, d, ep_ret, ep_cost, ep_len, cum_reward, cum_cost = env.reset(), 0, False, 0, 0, 0, 0, 0
+    rew_mov_avg, cost_mov_avg = [], []
     context_dist = Categorical(logits=torch.Tensor(np.ones(con_dim)))
     print("context distribution:", context_dist)
     total_t = 0
@@ -193,25 +214,35 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
 
             for _ in range(max_ep_len):
                 concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
+
                 a, _, logp_t, v_t = ac(concat_obs)
 
                 o, r, d, info = env.step(a.detach().numpy()[0])
                 # print("info", info)
                 # time.sleep(0.002)
-                # cost = info.get("cost")
-                # ep_cost += cost
+                cost = info.get("cost")
+                if cost is None:
+                    print("Hey! Cost NoneType Error: ", info)
+                    print(info)
+                    print("What was the reward? :", r)
+                    # print("What was the action? :", a.detach())
+
+                ep_cost += cost
                 ep_ret += r
                 ep_len += 1
                 total_t += 1
 
-                # r_total = r - cur_penalty * cost
-                # r_total /= (1 + cur_penalty)
+                cum_reward += r
+                cum_cost += cost
 
-                # buffer.store(c, concat_obs.squeeze().detach().numpy(), a.detach().numpy(), r_total, v_t.item(),
-                #              logp_t.detach().numpy())
+                r_total = r - cur_penalty * cost
+                r_total /= (1 + cur_penalty)
 
-                buffer.store(c, concat_obs.squeeze().detach().numpy(), a.detach().numpy(), r, v_t.item(),
+                buffer.store(c, concat_obs.squeeze().detach().numpy(), a.detach().numpy(), r_total, cost, v_t.item(),
                              logp_t.detach().numpy())
+
+                # buffer.store(c, concat_obs.squeeze().detach().numpy(), a.detach().numpy(), r, v_t.item(),
+                #              logp_t.detach().numpy())
                 logger.store(VVals=v_t)
 
                 terminal = d or (ep_len == max_ep_len)
@@ -221,6 +252,11 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
                     _, _, log_p = discrim(dc_diff, con)
                     buffer.finish_path(log_p.detach().numpy())
                     logger.store(EpRet=ep_ret, EpCost=ep_cost, EpLen=ep_len)
+
+                    episode_metrics = {'average ep ret': ep_ret, 'average ep cost': ep_cost}
+
+                    wandb.log(episode_metrics)
+
                     o, r, d, ep_ret, ep_cost, ep_len = env.reset(), 0, False, 0, 0, 0
 
         if (epoch % save_freq == 0) or (epoch == epochs - 1):
@@ -236,6 +272,16 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
         # update models
         update(epoch)
 
+        #  Cumulative cost calculations
+        cumulative_cost = mpi_sum(cum_cost)
+        cumulative_reward = mpi_sum(cum_reward)
+
+        cost_rate = cumulative_cost / ((epoch + 1) * episodes_per_epoch * max_ep_len)
+        reward_rate = cumulative_reward / ((epoch + 1) * episodes_per_epoch * max_ep_len)
+
+        log_metrics = {'cost rate': cost_rate, 'reward rate': reward_rate}
+        wandb.log(log_metrics)
+
         # Log
         logger.log_tabular('Epoch', epoch)
         logger.log_tabular('EpRet', with_min_and_max=True)
@@ -249,17 +295,19 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
         logger.log_tabular('DeltaLossV', average_only=True)
         logger.log_tabular('LossDC', average_only=True)
         logger.log_tabular('DeltaLossDC', average_only=True)
-        logger.log_tabular('Entropy', average_only=True)
+        # logger.log_tabular('Entropy', average_only=True)
         logger.log_tabular('KL', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
+
+    wandb.finish()
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', type=str, default='Safexp-PointGoal1-v0')
-    parser.add_argument('--hid', type=int, default=64)
+    parser.add_argument('--hid', type=int, default=128)
     parser.add_argument('--l', type=int, default=2)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--lam', type=float, default=0.97)
@@ -279,6 +327,7 @@ if __name__ == '__main__':
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
     valor_penalized(lambda: gym.make(args.env), actor_critic=ActorCritic, ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
-          disc=ValorDiscriminator, dc_kwargs=dict(hidden_dims=args.hid),
+          disc=ValorDiscriminator, dc_kwargs=dict(hidden_dims=[args.hid]*args.l),
+                    # dc_kwargs=dict(hidden_dims=[args.hid]),
           gamma=args.gamma, seed=args.seed, episodes_per_epoch=args.episodes_per_epoch, epochs=args.epochs,
           logger_kwargs=logger_kwargs, con_dim=args.con)

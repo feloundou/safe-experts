@@ -1,0 +1,97 @@
+here is the output file:  <_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/ppo_penalized_amaranth_8Ks_50e_64x2/ppo_penalized_amaranth_8Ks_50e_64x2_s0/progress.txt' mode='w' encoding='UTF-8'>
+[32;1mLogging data to /home/tyna/Documents/safe-experts/data/ppo_penalized_amaranth_8Ks_50e_64x2/ppo_penalized_amaranth_8Ks_50e_64x2_s0/progress.txt[0m
+[36;1mSaving config:
+[0m
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "actor_critic":	"MLPActorCritic",
+    "agent":	{
+        "<agent_types.PPOAgent object at 0x7fb205cc2eb0>":	{
+            "clip_ratio":	0.2,
+            "kl_margin":	1.2,
+            "params":	{
+                "clipped_adv":	true,
+                "constrained":	false,
+                "first_order":	true
+            },
+            "pi_iters":	80,
+            "pi_lr":	0.0003
+        }
+    },
+    "clip_ratio":	0.2,
+    "composite_name":	"ppo_penalized_amaranth_10Ks_50e_128x4",
+    "config_name":	"amaranth",
+    "cost_gamma":	0.99,
+    "cost_lam":	0.97,
+    "cost_lim":	0,
+    "ent_reg":	0.0,
+    "env_fn":	"<function main.<locals>.<lambda> at 0x7fb205cc1670>",
+    "epochs":	50,
+    "exp_name":	"ppo_penalized_amaranth_8Ks_50e_64x2",
+    "gamma":	0.99,
+    "lam":	0.95,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7fb205cc2fa0>":	{
+            "epoch_dict":	{},
+            "exp_name":	"ppo_penalized_amaranth_8Ks_50e_64x2",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/ppo_penalized_amaranth_8Ks_50e_64x2/ppo_penalized_amaranth_8Ks_50e_64x2_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/ppo_penalized_amaranth_8Ks_50e_64x2/ppo_penalized_amaranth_8Ks_50e_64x2_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"ppo_penalized_amaranth_8Ks_50e_64x2",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/ppo_penalized_amaranth_8Ks_50e_64x2/ppo_penalized_amaranth_8Ks_50e_64x2_s0"
+    },
+    "max_ep_len":	1000,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.01,
+    "pi_lr":	0.0003,
+    "save_every":	10,
+    "seed":	0,
+    "steps_per_epoch":	10000,
+    "target_kl":	0.01,
+    "train_pi_iters":	100,
+    "train_v_iters":	100,
+    "vf_lr":	0.001
+}
+/home/tyna/.local/lib/python3.8/site-packages/gym/logger.py:30: UserWarning: [33mWARN: Box bound precision lowered by casting to float32[0m
+  warnings.warn(colorize('%s: %s'%('WARN', msg % args), 'yellow'))
+constraints in the environment
+constrain hazards:  True
+hazards cost:  1.0
+[32;1m
+Number of parameters: 	 pi: 57604, 	 v: 57473
+[0m
+end of episode return:  -0.2957972373589528
+end of episode return:  -0.7620683213550962
+end of episode return:  -0.27415259585245577
+Traceback (most recent call last):
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_ppo.py", line 430, in <module>
+    main(amaranth_config)
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_ppo.py", line 406, in main
+    ppo(lambda: gym.make(args.env),
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_ppo.py", line 275, in ppo
+    next_o, r, d, info = env.step(a)
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/engine.py", line 1269, in step
+    reward = self.reward()
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/engine.py", line 1311, in reward
+    dist_goal = self.dist_goal()
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/engine.py", line 895, in dist_goal
+    return self.dist_xy(self.goal_pos)
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/engine.py", line 911, in dist_xy
+    pos = pos[:2]
+KeyboardInterrupt

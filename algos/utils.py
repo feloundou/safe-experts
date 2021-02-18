@@ -6,12 +6,10 @@ import torch
 import os.path as osp, time, atexit, os
 import warnings
 import torch.nn.functional as F
-<<<<<<< HEAD
 import math
 from ppo_algos import *
-=======
+
 from neural_nets import *
->>>>>>> parent of b84a2cf... gail and vail implementations
 from torch import nn
 
 from mpi4py import MPI
@@ -1322,6 +1320,7 @@ class VALORBuffer(object):
         self.obs = np.zeros((self.max_s, obs_dim + con_dim))
         self.act = np.zeros((self.max_s, act_dim))
         self.rew = np.zeros(self.max_s)
+        self.cost = np.zeros(self.max_s)
         self.ret = np.zeros(self.max_s)
         self.adv = np.zeros(self.max_s)
         self.pos = np.zeros(self.max_s)
@@ -1340,12 +1339,13 @@ class VALORBuffer(object):
         self.gamma = gamma
         self.lam = lam
 
-    def store(self, con, obs, act, rew, val, lgt):
+    def store(self, con, obs, act, rew, cost, val, lgt):
         assert self.ptr < self.max_s
         self.obs[self.ptr] = obs
         self.act[self.ptr] = act
         self.con[self.eps] = con
         self.rew[self.ptr] = rew
+        self.cost[self.ptr] = cost
         self.val[self.ptr] = val
         self.lgt[self.ptr] = lgt
         self.ptr += 1
@@ -1355,9 +1355,17 @@ class VALORBuffer(object):
         # TODO: convert this into vector operation
         start = int(self.end[self.eps])
         ep_l = self.ptr - start - 1
-        for i in range(self.N-1):
-            prev = int(i*ep_l/(self.N-1))
-            succ = int((i+1)*ep_l/(self.N-1))
+        # for i in range(self.N-1):
+        for i in range(1000):
+
+            # prev = int(i*ep_l/(self.N-1))
+            # succ = int((i+1)*ep_l/(self.N-1))
+
+            prev = int(i*ep_l)
+            succ = int((i+1)*ep_l)
+            print(prev)
+            print(succ)
+
             self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
 
         return self.dcbuf[self.eps]
@@ -1387,7 +1395,7 @@ class VALORBuffer(object):
         self.adv[occup_slice] = (self.adv[occup_slice] - adv_mean) / adv_std
         self.pos[occup_slice] = (self.pos[occup_slice] - pos_mean) / pos_std
         return [self.obs[occup_slice], self.act[occup_slice], self.adv[occup_slice], self.pos[occup_slice],
-            self.ret[occup_slice], self.lgt[occup_slice]]
+            self.ret[occup_slice], self.cost[occup_slice], self.lgt[occup_slice]]
 
     def retrieve_dc_buff(self):
         assert self.dc_eps == self.max_batch * self.dc_interv

@@ -1,0 +1,102 @@
+Warning: Log dir /home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0 already exists! Storing info there anyway.
+here is the output file:  <_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>
+[32;1mLogging data to /home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt[0m
+[36;1mSaving config:
+[0m
+{
+    "ac_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128
+        ]
+    },
+    "actor_critic":	"ActorCritic",
+    "clip_ratio":	0.2,
+    "composite_name":	"new_valor_penalized_standard",
+    "con_dim":	10,
+    "config_name":	"standard",
+    "cost_lim":	25,
+    "dc_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128
+        ]
+    },
+    "dc_lr":	0.0005,
+    "disc":	"ValorDiscriminator",
+    "env_fn":	"<function <lambda> at 0x7f743a032310>",
+    "episodes_per_epoch":	5,
+    "epochs":	1000,
+    "exp_name":	"valor-anonymous-expert",
+    "gamma":	0.99,
+    "k":	1,
+    "lam":	0.97,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f74bb5703a0>":	{
+            "epoch_dict":	{},
+            "exp_name":	"valor-anonymous-expert",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"valor-anonymous-expert",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0"
+    },
+    "max_ep_len":	1000,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.005,
+    "pi_lr":	0.0003,
+    "save_freq":	10,
+    "seed":	0,
+    "train_dc_interv":	10,
+    "train_dc_iters":	10,
+    "train_pi_iters":	1,
+    "train_v_iters":	80,
+    "vf_lr":	0.001
+}
+/home/tyna/.local/lib/python3.8/site-packages/gym/logger.py:30: UserWarning: [33mWARN: Box bound precision lowered by casting to float32[0m
+  warnings.warn(colorize('%s: %s'%('WARN', msg % args), 'yellow'))
+[32;1m
+Number of parameters: 	 pi: 25860, 	 v: 25729, 	 d: 25610
+[0m
+context distribution: Categorical(logits: torch.Size([10]))
+context sample:  tensor(0)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(1)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(8)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(9)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(2)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[2.]])
+return: tensor([-0.0140, -0.0145, -0.0148,  ..., -1.0483, -0.7030, -0.3534])
+shape:  torch.Size([5000])
+Traceback (most recent call last):
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 333, in <module>
+    valor_penalized(lambda: gym.make(args.env), actor_critic=ActorCritic, ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 287, in valor_penalized
+    update(epoch)
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 117, in update
+    print("mean return: ", np.mean(ret))
+  File "<__array_function__ internals>", line 5, in mean
+  File "/home/tyna/.local/lib/python3.8/site-packages/numpy/core/fromnumeric.py", line 3254, in mean
+    return mean(axis=axis, dtype=dtype, out=out, **kwargs)
+TypeError: mean() received an invalid combination of arguments - got (dtype=NoneType, out=NoneType, axis=NoneType, ), but expected one of:
+ * (*, torch.dtype dtype)
+ * (tuple of names dim, bool keepdim, *, torch.dtype dtype)
+ * (tuple of ints dim, bool keepdim, *, torch.dtype dtype)
+

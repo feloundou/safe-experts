@@ -1,0 +1,1361 @@
+Warning: Log dir /home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0 already exists! Storing info there anyway.
+here is the output file:  <_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>
+[32;1mLogging data to /home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt[0m
+[36;1mSaving config:
+[0m
+{
+    "ac_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128
+        ]
+    },
+    "actor_critic":	"ActorCritic",
+    "clip_ratio":	0.2,
+    "composite_name":	"new_valor_penalized_standard",
+    "con_dim":	10,
+    "config_name":	"standard",
+    "cost_lim":	25,
+    "dc_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128
+        ]
+    },
+    "dc_lr":	0.0005,
+    "disc":	"ValorDiscriminator",
+    "env_fn":	"<function <lambda> at 0x7f905de5f4c0>",
+    "episodes_per_epoch":	5,
+    "epochs":	1000,
+    "exp_name":	"valor-anonymous-expert",
+    "gamma":	0.99,
+    "k":	1,
+    "lam":	0.97,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f90df3ae3a0>":	{
+            "epoch_dict":	{},
+            "exp_name":	"valor-anonymous-expert",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"valor-anonymous-expert",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0"
+    },
+    "max_ep_len":	1000,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.005,
+    "pi_lr":	0.0003,
+    "save_freq":	10,
+    "seed":	0,
+    "train_dc_interv":	10,
+    "train_dc_iters":	10,
+    "train_pi_iters":	1,
+    "train_v_iters":	80,
+    "vf_lr":	0.001
+}
+/home/tyna/.local/lib/python3.8/site-packages/gym/logger.py:30: UserWarning: [33mWARN: Box bound precision lowered by casting to float32[0m
+  warnings.warn(colorize('%s: %s'%('WARN', msg % args), 'yellow'))
+[32;1m
+Number of parameters: 	 pi: 25860, 	 v: 25729, 	 d: 25610
+[0m
+context distribution: Categorical(logits: torch.Size([10]))
+context sample:  tensor(0)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(1)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(8)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(9)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(2)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[2.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               0 |
+|      AverageEpRet |           0.145 |
+|          StdEpRet |           0.898 |
+|          MaxEpRet |            1.54 |
+|          MinEpRet |           -0.79 |
+|     AverageEpCost |              33 |
+|         StdEpCost |            42.8 |
+|         MaxEpCost |             105 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.131 |
+|          StdVVals |           0.273 |
+|          MaxVVals |           0.418 |
+|          MinVVals |          -0.525 |
+| TotalEnvInteracts |           5e+03 |
+|            LossPi |        1.49e+07 |
+|       DeltaLossPi |       -1.49e+07 |
+|             LossV |            13.2 |
+|        DeltaLossV |           -8.98 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00987 |
+|              Time |            18.1 |
+---------------------------------------
+context sample:  tensor(2)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[2.]])
+context sample:  tensor(6)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(8)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(1)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(3)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[3.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               1 |
+|      AverageEpRet |          -0.341 |
+|          StdEpRet |           0.291 |
+|          MaxEpRet |           0.129 |
+|          MinEpRet |          -0.659 |
+|     AverageEpCost |            57.6 |
+|         StdEpCost |            91.4 |
+|         MaxEpCost |             236 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.82 |
+|          StdVVals |            2.64 |
+|          MaxVVals |            5.63 |
+|          MinVVals |           -8.74 |
+| TotalEnvInteracts |           1e+04 |
+|            LossPi |        7.61e+07 |
+|       DeltaLossPi |       -7.61e+07 |
+|             LossV |            31.7 |
+|        DeltaLossV |           -28.4 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00488 |
+|              Time |            28.8 |
+---------------------------------------
+context sample:  tensor(9)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(0)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(1)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(2)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[2.]])
+context sample:  tensor(9)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[9.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               2 |
+|      AverageEpRet |          0.0421 |
+|          StdEpRet |           0.522 |
+|          MaxEpRet |               1 |
+|          MinEpRet |          -0.537 |
+|     AverageEpCost |              82 |
+|         StdEpCost |             143 |
+|         MaxEpCost |             366 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.98 |
+|          StdVVals |            3.09 |
+|          MaxVVals |            2.79 |
+|          MinVVals |           -14.3 |
+| TotalEnvInteracts |         1.5e+04 |
+|            LossPi |        9.62e+13 |
+|       DeltaLossPi |       -9.62e+13 |
+|             LossV |            82.7 |
+|        DeltaLossV |           -64.5 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00388 |
+|              Time |            41.6 |
+---------------------------------------
+context sample:  tensor(4)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(5)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(8)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(4)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(0)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[0.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               3 |
+|      AverageEpRet |          -0.409 |
+|          StdEpRet |           0.328 |
+|          MaxEpRet |          0.0645 |
+|          MinEpRet |          -0.791 |
+|     AverageEpCost |             155 |
+|         StdEpCost |             197 |
+|         MaxEpCost |             510 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -2.25 |
+|          StdVVals |            4.42 |
+|          MaxVVals |           0.719 |
+|          MinVVals |           -22.7 |
+| TotalEnvInteracts |           2e+04 |
+|            LossPi |         9.1e+17 |
+|       DeltaLossPi |        -9.1e+17 |
+|             LossV |             204 |
+|        DeltaLossV |            -172 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00204 |
+|              Time |            52.1 |
+---------------------------------------
+context sample:  tensor(0)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(1)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(3)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(0)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(4)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[4.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               4 |
+|      AverageEpRet |           0.869 |
+|          StdEpRet |           0.899 |
+|          MaxEpRet |            2.21 |
+|          MinEpRet |          -0.159 |
+|     AverageEpCost |               3 |
+|         StdEpCost |               6 |
+|         MaxEpCost |              15 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -8.77 |
+|          StdVVals |            10.2 |
+|          MaxVVals |           0.469 |
+|          MinVVals |           -31.8 |
+| TotalEnvInteracts |         2.5e+04 |
+|            LossPi |            5.44 |
+|       DeltaLossPi |           -5.46 |
+|             LossV |             183 |
+|        DeltaLossV |            -183 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00163 |
+|              Time |            62.3 |
+---------------------------------------
+context sample:  tensor(4)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(2)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[2.]])
+context sample:  tensor(7)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[7.]])
+context sample:  tensor(4)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(4)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[4.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               5 |
+|      AverageEpRet |          -0.559 |
+|          StdEpRet |           0.621 |
+|          MaxEpRet |         -0.0344 |
+|          MinEpRet |           -1.42 |
+|     AverageEpCost |               0 |
+|         StdEpCost |               0 |
+|         MaxEpCost |               0 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.191 |
+|          StdVVals |          0.0481 |
+|          MaxVVals |          -0.052 |
+|          MinVVals |          -0.481 |
+| TotalEnvInteracts |           3e+04 |
+|            LossPi |           0.208 |
+|       DeltaLossPi |          -0.197 |
+|             LossV |          0.0348 |
+|        DeltaLossV |           -0.03 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00236 |
+|              Time |            73.1 |
+---------------------------------------
+context sample:  tensor(5)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(0)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(5)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(3)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(8)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[8.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               6 |
+|      AverageEpRet |         -0.0247 |
+|          StdEpRet |           0.819 |
+|          MaxEpRet |            1.11 |
+|          MinEpRet |           -1.39 |
+|     AverageEpCost |            87.4 |
+|         StdEpCost |            99.1 |
+|         MaxEpCost |             261 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          0.0509 |
+|          StdVVals |          0.0562 |
+|          MaxVVals |            0.37 |
+|          MinVVals |         -0.0615 |
+| TotalEnvInteracts |         3.5e+04 |
+|            LossPi |        8.82e+15 |
+|       DeltaLossPi |       -8.82e+15 |
+|             LossV |             120 |
+|        DeltaLossV |           -25.8 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00197 |
+|              Time |            83.5 |
+---------------------------------------
+context sample:  tensor(8)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(6)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(6)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(7)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[7.]])
+context sample:  tensor(8)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[8.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               7 |
+|      AverageEpRet |          -0.314 |
+|          StdEpRet |           0.716 |
+|          MaxEpRet |           0.873 |
+|          MinEpRet |          -0.903 |
+|     AverageEpCost |              99 |
+|         StdEpCost |             113 |
+|         MaxEpCost |             300 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -5.02 |
+|          StdVVals |         0.00421 |
+|          MaxVVals |           -5.02 |
+|          MinVVals |           -5.05 |
+| TotalEnvInteracts |           4e+04 |
+|            LossPi |        6.85e+21 |
+|       DeltaLossPi |       -6.85e+21 |
+|             LossV |             144 |
+|        DeltaLossV |            -3.8 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |        0.000715 |
+|              Time |            93.5 |
+---------------------------------------
+context sample:  tensor(8)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(0)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(0)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(2)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[2.]])
+context sample:  tensor(9)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[9.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |               8 |
+|      AverageEpRet |           -1.45 |
+|          StdEpRet |           0.994 |
+|          MaxEpRet |         -0.0864 |
+|          MinEpRet |           -3.14 |
+|     AverageEpCost |            16.4 |
+|         StdEpCost |            32.8 |
+|         MaxEpCost |              82 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -6.02 |
+|          StdVVals |          0.0396 |
+|          MaxVVals |           -5.96 |
+|          MinVVals |           -6.26 |
+| TotalEnvInteracts |         4.5e+04 |
+|            LossPi |        8.16e+13 |
+|       DeltaLossPi |       -8.16e+13 |
+|             LossV |            46.6 |
+|        DeltaLossV |           -24.2 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00249 |
+|              Time |             104 |
+---------------------------------------
+context sample:  tensor(8)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(8)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(0)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(5)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(7)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[7.]])
+policy pull
+value function pull
+Discriminator Update!
+s diff:  tensor([[[ 3.6493e-01, -9.1230e+00,  0.0000e+00,  ...,  5.5587e-01,
+          -5.0166e-02,  0.0000e+00],
+         [ 2.1622e+00,  1.3853e+00,  0.0000e+00,  ..., -3.5968e-01,
+           3.4029e-02,  0.0000e+00],
+         [-2.2652e-01,  7.5969e+00,  0.0000e+00,  ...,  1.9342e-01,
+          -1.1488e-01,  0.0000e+00],
+         ...,
+         [-5.6529e+00,  7.1317e+00,  0.0000e+00,  ..., -6.0620e-02,
+          -4.9292e-02,  0.0000e+00],
+         [ 5.1709e-01, -7.1484e+00,  0.0000e+00,  ..., -2.7444e-01,
+           4.7860e-02,  0.0000e+00],
+         [ 5.2611e+00,  2.5350e+01,  0.0000e+00,  ...,  2.7033e-01,
+          -1.1871e-02,  0.0000e+00]],
+
+        [[ 2.6077e+00,  8.5242e+00,  0.0000e+00,  ...,  1.7952e-01,
+          -2.3212e-02,  0.0000e+00],
+         [-5.6365e+00, -2.1165e+01,  0.0000e+00,  ..., -1.0580e-01,
+           4.9150e-02,  0.0000e+00],
+         [ 2.6412e-01,  8.2038e+00,  0.0000e+00,  ..., -1.0816e-01,
+          -5.8890e-02,  0.0000e+00],
+         ...,
+         [ 3.0353e-01,  9.4809e+00,  0.0000e+00,  ..., -7.9797e-02,
+           7.6885e-02,  0.0000e+00],
+         [ 5.4023e+00,  1.2042e+01,  0.0000e+00,  ...,  1.1852e-01,
+          -5.3131e-02,  0.0000e+00],
+         [-4.9073e+00, -6.5415e+00,  0.0000e+00,  ..., -4.3760e-01,
+           1.3114e-02,  0.0000e+00]],
+
+        [[ 2.4490e+00,  9.3827e+00,  0.0000e+00,  ...,  2.3129e-01,
+          -5.4621e-02,  0.0000e+00],
+         [-5.7920e-01, -1.5617e+01,  0.0000e+00,  ...,  3.1337e-01,
+          -6.2491e-02,  0.0000e+00],
+         [ 3.3462e-01, -5.2650e+00,  0.0000e+00,  ..., -1.8826e-01,
+           1.3571e-01,  0.0000e+00],
+         ...,
+         [ 5.0338e-01,  4.4783e+00,  0.0000e+00,  ..., -2.5752e-01,
+           2.2928e-02,  0.0000e+00],
+         [ 5.9236e+00,  1.2083e+00,  0.0000e+00,  ..., -6.6945e-02,
+           3.7236e-02,  0.0000e+00],
+         [-3.3277e-01, -8.4313e+00,  0.0000e+00,  ...,  2.0826e-01,
+           3.7086e-02,  0.0000e+00]],
+
+        ...,
+
+        [[ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         ...,
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00]],
+
+        [[ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         ...,
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00]],
+
+        [[ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         ...,
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00]]])
+LABEL:  tensor([6, 3, 7, 3, 6, 1, 6, 9, 4, 7, 9, 9, 1, 5, 0, 2, 6, 5, 8, 1, 7, 0, 0, 8,
+        3, 4, 7, 9, 3, 7, 1, 6, 7, 1, 8, 3, 3, 2, 5, 7, 8, 0, 1, 6, 8, 6, 2, 0,
+        6, 3])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([2, 4, 2, 0, 2, 5, 2, 2, 2, 0, 1, 6, 2, 3, 1, 6, 8, 1, 6, 0, 4, 7, 0, 3,
+        7, 0, 8, 6, 5, 7, 3, 5, 5, 8, 8, 4, 5, 0, 9, 9, 3, 9, 3, 0, 3, 7, 1, 0,
+        3, 2])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([3, 4, 0, 5, 2, 9, 4, 7, 7, 1, 7, 1, 3, 7, 2, 1, 7, 5, 1, 3, 2, 3, 7, 4,
+        9, 4, 6, 9, 7, 6, 0, 9, 0, 8, 4, 1, 6, 2, 3, 7, 5, 6, 2, 1, 7, 7, 8, 5,
+        6, 1])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([1, 6, 6, 4, 6, 6, 4, 1, 8, 4, 9, 4, 6, 1, 7, 3, 0, 5, 8, 3, 5, 1, 8, 7,
+        3, 5, 5, 1, 2, 1, 3, 0, 8, 2, 5, 1, 7, 2, 0, 7, 1, 9, 7, 3, 8, 6, 7, 6,
+        7, 2])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([5, 9, 3, 0, 8, 8, 5, 2, 3, 7, 1, 0, 0, 1, 3, 7, 5, 1, 2, 5, 9, 0, 0, 7,
+        1, 3, 4, 6, 9, 5, 5, 8, 1, 9, 0, 6, 6, 0, 1, 1, 9, 7, 1, 3, 1, 8, 6, 5,
+        2, 0])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([2, 9, 1, 1, 5, 8, 8, 2, 4, 4, 8, 5, 7, 2, 0, 6, 6, 6, 3, 1, 7, 2, 1, 7,
+        0, 2, 9, 6, 4, 3, 4, 7, 8, 5, 8, 0, 1, 3, 1, 1, 9, 9, 0, 6, 0, 4, 3, 2,
+        7, 0])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([5, 0, 9, 8, 4, 9, 9, 6, 5, 5, 6, 1, 2, 9, 3, 4, 2, 0, 6, 9, 4, 6, 6, 6,
+        4, 4, 4, 3, 6, 5, 9, 8, 6, 4, 6, 9, 0, 9, 0, 1, 0, 6, 0, 8, 7, 3, 1, 7,
+        0, 3])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([1, 2, 0, 8, 9, 1, 7, 8, 7, 6, 2, 0, 5, 7, 7, 3, 1, 8, 6, 2, 8, 2, 5, 7,
+        4, 7, 6, 0, 8, 2, 7, 1, 1, 7, 8, 0, 3, 4, 1, 2, 5, 4, 0, 1, 9, 1, 6, 9,
+        2, 4])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([2, 5, 5, 4, 1, 6, 0, 0, 6, 3, 5, 1, 5, 2, 2, 8, 6, 6, 0, 2, 4, 5, 4, 0,
+        0, 0, 7, 0, 0, 0, 7, 8, 7, 3, 1, 6, 7, 7, 2, 5, 2, 8, 5, 5, 4, 5, 9, 9,
+        4, 1])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([9, 0, 1, 3, 9, 0, 3, 7, 0, 1, 4, 5, 5, 4, 1, 0, 0, 9, 0, 7, 7, 7, 0, 1,
+        8, 5, 6, 8, 3, 0, 4, 3, 9, 5, 6, 9, 6, 2, 7, 9, 1, 0, 2, 1, 1, 1, 3, 0,
+        4, 8])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([1, 2, 4, 4, 0, 9, 0, 7, 8, 9, 1, 6, 3, 5, 9, 2, 6, 5, 0, 8, 4, 5, 9, 0,
+        5, 8, 0, 4, 7, 3, 0, 3, 9, 3, 9, 4, 4, 0, 6, 3, 8, 0, 9, 6, 9, 2, 9, 8,
+        4, 7])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([5, 3, 0, 8, 2, 7, 2, 5, 5, 5, 7, 0, 7, 2, 8, 1, 8, 3, 1, 4, 9, 1, 9, 5,
+        0, 8, 9, 1, 4, 5, 9, 0, 3, 7, 6, 3, 9, 2, 0, 0, 2, 0, 9, 5, 6, 5, 6, 7,
+        7, 2])
+GROUND TRUTH:  tensor([8., 8., 0., 5., 7., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+logging changes
+---------------------------------------
+|             Epoch |               9 |
+|      AverageEpRet |          -0.673 |
+|          StdEpRet |            1.44 |
+|          MaxEpRet |            1.15 |
+|          MinEpRet |           -2.02 |
+|     AverageEpCost |            67.4 |
+|         StdEpCost |            85.4 |
+|         MaxEpCost |             203 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.28 |
+|          StdVVals |            0.21 |
+|          MaxVVals |           -1.01 |
+|          MinVVals |           -2.07 |
+| TotalEnvInteracts |           5e+04 |
+|            LossPi |        1.33e+21 |
+|       DeltaLossPi |       -1.33e+21 |
+|             LossV |             123 |
+|        DeltaLossV |           -9.65 |
+|            LossDC |            2.27 |
+|       DeltaLossDC |          -0.275 |
+|                KL |         0.00207 |
+|              Time |             115 |
+---------------------------------------
+context sample:  tensor(9)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(8)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(8)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(9)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(8)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[8.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              10 |
+|      AverageEpRet |          -0.293 |
+|          StdEpRet |           0.815 |
+|          MaxEpRet |            0.54 |
+|          MinEpRet |           -1.83 |
+|     AverageEpCost |            31.4 |
+|         StdEpCost |            62.8 |
+|         MaxEpCost |             157 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -4.26 |
+|          StdVVals |           0.047 |
+|          MaxVVals |            -4.1 |
+|          MinVVals |           -4.32 |
+| TotalEnvInteracts |         5.5e+04 |
+|            LossPi |        2.84e+21 |
+|       DeltaLossPi |       -2.84e+21 |
+|             LossV |            75.8 |
+|        DeltaLossV |           -26.8 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00428 |
+|              Time |             125 |
+---------------------------------------
+context sample:  tensor(0)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(8)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(4)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(4)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(6)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[6.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              11 |
+|      AverageEpRet |            -2.8 |
+|          StdEpRet |            3.78 |
+|          MaxEpRet |            4.07 |
+|          MinEpRet |           -7.14 |
+|     AverageEpCost |            41.2 |
+|         StdEpCost |            64.7 |
+|         MaxEpCost |             167 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.49 |
+|          StdVVals |            2.01 |
+|          MaxVVals |           0.517 |
+|          MinVVals |           -8.32 |
+| TotalEnvInteracts |           6e+04 |
+|            LossPi |         1.4e+14 |
+|       DeltaLossPi |        -1.4e+14 |
+|             LossV |            34.1 |
+|        DeltaLossV |           -22.2 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00109 |
+|              Time |             135 |
+---------------------------------------
+context sample:  tensor(6)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(6)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(9)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(1)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(2)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[2.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              12 |
+|      AverageEpRet |           -3.33 |
+|          StdEpRet |            2.32 |
+|          MaxEpRet |            0.25 |
+|          MinEpRet |           -6.82 |
+|     AverageEpCost |            58.8 |
+|         StdEpCost |              86 |
+|         MaxEpCost |             228 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |            -1.1 |
+|          StdVVals |            1.58 |
+|          MaxVVals |            1.36 |
+|          MinVVals |             -11 |
+| TotalEnvInteracts |         6.5e+04 |
+|            LossPi |        7.25e+21 |
+|       DeltaLossPi |       -7.25e+21 |
+|             LossV |            98.8 |
+|        DeltaLossV |           -69.7 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00247 |
+|              Time |             145 |
+---------------------------------------
+context sample:  tensor(6)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(6)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(3)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(7)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[7.]])
+context sample:  tensor(0)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[0.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              13 |
+|      AverageEpRet |            -5.2 |
+|          StdEpRet |            3.09 |
+|          MaxEpRet |           -1.14 |
+|          MinEpRet |            -9.5 |
+|     AverageEpCost |            11.6 |
+|         StdEpCost |            23.2 |
+|         MaxEpCost |              58 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.54 |
+|          StdVVals |             3.7 |
+|          MaxVVals |           0.994 |
+|          MinVVals |           -20.2 |
+| TotalEnvInteracts |           7e+04 |
+|            LossPi |        3.72e+10 |
+|       DeltaLossPi |       -3.72e+10 |
+|             LossV |            7.86 |
+|        DeltaLossV |              -7 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |          0.0019 |
+|              Time |             155 |
+---------------------------------------
+context sample:  tensor(7)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[7.]])
+context sample:  tensor(4)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(1)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[1.]])
+context sample:  tensor(9)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(9)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[9.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              14 |
+|      AverageEpRet |          -0.534 |
+|          StdEpRet |           0.893 |
+|          MaxEpRet |           0.359 |
+|          MinEpRet |           -2.04 |
+|     AverageEpCost |            11.6 |
+|         StdEpCost |            14.2 |
+|         MaxEpCost |              29 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.91 |
+|          StdVVals |            4.81 |
+|          MaxVVals |          0.0932 |
+|          MinVVals |           -21.3 |
+| TotalEnvInteracts |         7.5e+04 |
+|            LossPi |        8.94e+04 |
+|       DeltaLossPi |       -8.94e+04 |
+|             LossV |            20.1 |
+|        DeltaLossV |           -16.2 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00101 |
+|              Time |             165 |
+---------------------------------------
+context sample:  tensor(8)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(0)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(3)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(9)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(6)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[6.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              15 |
+|      AverageEpRet |          -0.845 |
+|          StdEpRet |            3.16 |
+|          MaxEpRet |            1.97 |
+|          MinEpRet |           -5.93 |
+|     AverageEpCost |              10 |
+|         StdEpCost |            12.6 |
+|         MaxEpCost |              30 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.458 |
+|          StdVVals |            0.45 |
+|          MaxVVals |            0.33 |
+|          MinVVals |           -5.96 |
+| TotalEnvInteracts |           8e+04 |
+|            LossPi |        3.05e+05 |
+|       DeltaLossPi |       -3.05e+05 |
+|             LossV |            5.56 |
+|        DeltaLossV |           -2.02 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |        0.000794 |
+|              Time |             176 |
+---------------------------------------
+context sample:  tensor(4)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(4)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(8)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(0)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(3)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[3.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              16 |
+|      AverageEpRet |           -3.35 |
+|          StdEpRet |            3.19 |
+|          MaxEpRet |           0.802 |
+|          MinEpRet |           -6.83 |
+|     AverageEpCost |            19.8 |
+|         StdEpCost |            31.4 |
+|         MaxEpCost |              81 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.28 |
+|          StdVVals |            2.79 |
+|          MaxVVals |           0.906 |
+|          MinVVals |           -18.4 |
+| TotalEnvInteracts |         8.5e+04 |
+|            LossPi |        3.06e+08 |
+|       DeltaLossPi |       -3.06e+08 |
+|             LossV |            4.46 |
+|        DeltaLossV |           -2.32 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |          0.0011 |
+|              Time |             186 |
+---------------------------------------
+context sample:  tensor(7)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[7.]])
+context sample:  tensor(4)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[4.]])
+context sample:  tensor(6)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(5)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(9)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[9.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              17 |
+|      AverageEpRet |          -0.597 |
+|          StdEpRet |            1.24 |
+|          MaxEpRet |            1.58 |
+|          MinEpRet |           -2.28 |
+|     AverageEpCost |            16.6 |
+|         StdEpCost |            20.9 |
+|         MaxEpCost |              49 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.837 |
+|          StdVVals |            2.04 |
+|          MaxVVals |           0.604 |
+|          MinVVals |             -15 |
+| TotalEnvInteracts |           9e+04 |
+|            LossPi |         9.4e+08 |
+|       DeltaLossPi |        -9.4e+08 |
+|             LossV |            10.7 |
+|        DeltaLossV |           -7.27 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |         0.00106 |
+|              Time |             196 |
+---------------------------------------
+context sample:  tensor(7)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[7.]])
+context sample:  tensor(8)
+LABEL:  tensor([5])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(5)
+LABEL:  tensor([1])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(9)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(4)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[4.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              18 |
+|      AverageEpRet |          -0.778 |
+|          StdEpRet |            2.14 |
+|          MaxEpRet |            3.06 |
+|          MinEpRet |           -2.75 |
+|     AverageEpCost |              11 |
+|         StdEpCost |            13.9 |
+|         MaxEpCost |              33 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.687 |
+|          StdVVals |            1.29 |
+|          MaxVVals |            0.37 |
+|          MinVVals |           -13.6 |
+| TotalEnvInteracts |         9.5e+04 |
+|            LossPi |         8.7e+03 |
+|       DeltaLossPi |        -8.7e+03 |
+|             LossV |            5.73 |
+|        DeltaLossV |           -2.52 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |        0.000531 |
+|              Time |             206 |
+---------------------------------------
+context sample:  tensor(6)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(3)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(3)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(2)
+LABEL:  tensor([4])
+GROUND TRUTH:  tensor([[2.]])
+context sample:  tensor(4)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[4.]])
+policy pull
+value function pull
+Discriminator Update!
+s diff:  tensor([[[ 1.5684e+00, -2.4428e-01,  0.0000e+00,  ...,  7.7011e-01,
+          -6.3782e-02,  0.0000e+00],
+         [ 4.1480e-01,  7.2808e-01,  0.0000e+00,  ..., -2.1507e-01,
+           6.7867e-03,  0.0000e+00],
+         [-7.5660e-01,  1.1920e+01,  0.0000e+00,  ...,  3.1608e-01,
+          -1.6368e-01,  0.0000e+00],
+         ...,
+         [-9.5984e-01,  1.3136e+01,  0.0000e+00,  ...,  4.1269e-01,
+          -1.6494e-01,  0.0000e+00],
+         [-5.0618e+00, -1.9014e+01,  0.0000e+00,  ..., -3.6192e-01,
+          -1.2453e-01,  0.0000e+00],
+         [ 6.4163e-01, -5.2690e+00,  0.0000e+00,  ..., -3.4676e-01,
+           3.0557e-01,  0.0000e+00]],
+
+        [[-3.7634e+00,  6.2308e+00,  0.0000e+00,  ...,  5.1277e-01,
+          -1.7274e-01,  0.0000e+00],
+         [ 5.6161e+00,  4.4490e+00,  0.0000e+00,  ...,  2.6109e-02,
+           2.4525e-02,  0.0000e+00],
+         [-7.1688e-01, -1.7495e+01,  0.0000e+00,  ...,  4.1876e-01,
+           1.6718e-01,  0.0000e+00],
+         ...,
+         [ 1.1056e+00, -1.2575e+01,  0.0000e+00,  ...,  2.2359e-02,
+          -1.1035e-01,  0.0000e+00],
+         [ 3.9374e+00,  2.5292e+01,  0.0000e+00,  ...,  2.7538e-01,
+          -1.6679e-02,  0.0000e+00],
+         [-1.9726e-01, -2.5086e+01,  0.0000e+00,  ...,  1.0226e-01,
+          -3.2501e-02,  0.0000e+00]],
+
+        [[ 5.3951e-02, -9.6484e+00,  0.0000e+00,  ...,  4.8054e-01,
+          -5.1879e-02,  0.0000e+00],
+         [ 4.6855e-01,  8.3327e+00,  0.0000e+00,  ...,  5.2408e-01,
+          -7.0037e-02,  0.0000e+00],
+         [ 9.0537e-01, -1.4643e+01,  0.0000e+00,  ..., -2.2247e-01,
+           2.0539e-01,  0.0000e+00],
+         ...,
+         [-6.7325e-01,  1.0586e+01,  0.0000e+00,  ...,  3.6487e-01,
+          -1.9907e-01,  0.0000e+00],
+         [-5.5506e+00,  1.5988e+00,  0.0000e+00,  ..., -9.7434e-02,
+          -3.5778e-02,  0.0000e+00],
+         [ 1.0830e-02, -5.3005e+00,  0.0000e+00,  ..., -6.9711e-02,
+          -7.0322e-02,  0.0000e+00]],
+
+        ...,
+
+        [[ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         ...,
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00]],
+
+        [[ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         ...,
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00]],
+
+        [[ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         ...,
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00],
+         [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  ...,  0.0000e+00,
+           0.0000e+00,  0.0000e+00]]])
+LABEL:  tensor([6, 2, 6, 3, 2, 0, 6, 7, 8, 4, 6, 7, 0, 8, 6, 1, 5, 6, 5, 0, 2, 9, 8, 0,
+        4, 9, 8, 6, 4, 9, 1, 7, 0, 8, 5, 0, 2, 0, 2, 7, 1, 4, 3, 0, 2, 5, 3, 2,
+        7, 2])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([8, 6, 6, 8, 9, 5, 3, 9, 5, 0, 4, 7, 7, 5, 1, 4, 7, 8, 1, 3, 5, 7, 6, 4,
+        0, 5, 9, 4, 8, 2, 9, 6, 0, 4, 0, 9, 9, 7, 1, 8, 1, 8, 4, 4, 2, 0, 2, 7,
+        7, 5])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([5, 7, 4, 2, 8, 3, 6, 0, 3, 7, 1, 0, 7, 2, 3, 0, 4, 3, 1, 2, 2, 3, 2, 2,
+        4, 4, 7, 4, 6, 4, 2, 6, 1, 3, 1, 8, 1, 8, 5, 2, 4, 7, 0, 0, 2, 1, 7, 7,
+        3, 4])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([7, 6, 9, 0, 7, 7, 2, 8, 4, 6, 7, 9, 0, 1, 6, 2, 8, 9, 5, 2, 5, 0, 0, 0,
+        7, 2, 5, 6, 2, 1, 2, 4, 3, 0, 8, 7, 7, 5, 0, 5, 0, 1, 0, 0, 7, 1, 3, 0,
+        7, 8])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([7, 1, 9, 2, 0, 6, 8, 3, 1, 2, 0, 9, 9, 2, 5, 3, 5, 8, 7, 8, 8, 0, 0, 2,
+        4, 3, 3, 4, 0, 6, 5, 0, 0, 8, 5, 4, 5, 2, 6, 6, 5, 8, 3, 6, 3, 5, 0, 0,
+        7, 4])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([5, 9, 2, 0, 6, 9, 3, 4, 8, 9, 6, 0, 7, 1, 6, 1, 2, 8, 3, 0, 7, 7, 9, 6,
+        4, 2, 6, 1, 7, 3, 6, 1, 0, 8, 0, 1, 3, 3, 5, 7, 6, 0, 7, 6, 7, 0, 1, 4,
+        5, 0])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([4, 8, 8, 0, 0, 4, 1, 8, 2, 6, 5, 4, 5, 6, 1, 6, 0, 1, 6, 9, 0, 9, 0, 6,
+        9, 0, 7, 0, 1, 9, 9, 0, 3, 0, 6, 3, 0, 4, 6, 4, 3, 2, 5, 6, 4, 0, 4, 2,
+        0, 6])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([7, 5, 3, 0, 6, 0, 4, 0, 9, 6, 0, 5, 3, 0, 0, 4, 0, 8, 4, 5, 6, 6, 0, 4,
+        7, 6, 7, 8, 7, 8, 3, 4, 3, 7, 4, 2, 3, 9, 0, 3, 0, 1, 9, 7, 1, 7, 5, 5,
+        5, 3])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([8, 1, 7, 6, 2, 6, 3, 0, 4, 2, 4, 7, 9, 3, 9, 6, 6, 0, 7, 9, 3, 0, 4, 7,
+        0, 9, 5, 3, 3, 7, 0, 3, 2, 5, 5, 6, 2, 2, 7, 4, 4, 8, 1, 0, 9, 1, 0, 8,
+        8, 7])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([0, 9, 2, 4, 7, 0, 4, 2, 4, 5, 0, 8, 9, 4, 7, 2, 6, 3, 1, 7, 5, 3, 7, 8,
+        7, 6, 2, 7, 9, 3, 4, 7, 0, 2, 9, 6, 7, 0, 7, 9, 3, 0, 1, 5, 7, 7, 5, 2,
+        4, 0])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([5, 1, 5, 8, 3, 1, 5, 0, 5, 6, 3, 2, 8, 5, 6, 4, 3, 6, 8, 1, 0, 5, 8, 1,
+        3, 6, 7, 3, 5, 1, 3, 0, 1, 1, 0, 9, 1, 1, 8, 9, 0, 3, 6, 3, 6, 8, 9, 5,
+        1, 2])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+LABEL:  tensor([6, 7, 2, 4, 0, 0, 0, 5, 0, 3, 4, 0, 2, 0, 7, 9, 0, 2, 4, 7, 6, 1, 0, 9,
+        3, 8, 5, 1, 0, 7, 9, 8, 4, 7, 6, 7, 1, 0, 9, 8, 3, 8, 3, 0, 1, 9, 0, 5,
+        1, 2])
+GROUND TRUTH:  tensor([6., 3., 3., 2., 4., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+logging changes
+---------------------------------------
+|             Epoch |              19 |
+|      AverageEpRet |              -2 |
+|          StdEpRet |            2.13 |
+|          MaxEpRet |           0.567 |
+|          MinEpRet |           -4.73 |
+|     AverageEpCost |            17.4 |
+|         StdEpCost |            15.2 |
+|         MaxEpCost |              38 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.531 |
+|          StdVVals |            1.11 |
+|          MaxVVals |            4.06 |
+|          MinVVals |           -13.9 |
+| TotalEnvInteracts |           1e+05 |
+|            LossPi |        2.03e+05 |
+|       DeltaLossPi |       -2.03e+05 |
+|             LossV |            6.53 |
+|        DeltaLossV |           -4.96 |
+|            LossDC |               2 |
+|       DeltaLossDC |          -0.316 |
+|                KL |        0.000469 |
+|              Time |             217 |
+---------------------------------------
+context sample:  tensor(5)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(6)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(0)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(6)
+LABEL:  tensor([9])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(3)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[3.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              20 |
+|      AverageEpRet |          -0.395 |
+|          StdEpRet |             2.5 |
+|          MaxEpRet |            3.82 |
+|          MinEpRet |           -3.07 |
+|     AverageEpCost |              45 |
+|         StdEpCost |            33.4 |
+|         MaxEpCost |             105 |
+|         MinEpCost |               2 |
+|             EpLen |           1e+03 |
+|      AverageVVals |          -0.989 |
+|          StdVVals |            2.32 |
+|          MaxVVals |          0.0282 |
+|          MinVVals |           -13.7 |
+| TotalEnvInteracts |        1.05e+05 |
+|            LossPi |        1.98e+14 |
+|       DeltaLossPi |       -1.98e+14 |
+|             LossV |            30.8 |
+|        DeltaLossV |           -26.7 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |        0.000549 |
+|              Time |             229 |
+---------------------------------------
+context sample:  tensor(2)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[2.]])
+context sample:  tensor(8)
+LABEL:  tensor([0])
+GROUND TRUTH:  tensor([[8.]])
+context sample:  tensor(5)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[5.]])
+context sample:  tensor(3)
+LABEL:  tensor([8])
+GROUND TRUTH:  tensor([[3.]])
+context sample:  tensor(0)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[0.]])
+policy pull
+value function pull
+logging changes
+---------------------------------------
+|             Epoch |              21 |
+|      AverageEpRet |          -0.455 |
+|          StdEpRet |            1.05 |
+|          MaxEpRet |           0.862 |
+|          MinEpRet |           -2.04 |
+|     AverageEpCost |            15.4 |
+|         StdEpCost |            22.5 |
+|         MaxEpCost |              58 |
+|         MinEpCost |               0 |
+|             EpLen |           1e+03 |
+|      AverageVVals |           -1.34 |
+|          StdVVals |            3.58 |
+|          MaxVVals |          0.0261 |
+|          MinVVals |           -26.4 |
+| TotalEnvInteracts |         1.1e+05 |
+|            LossPi |        2.65e+06 |
+|       DeltaLossPi |       -2.65e+06 |
+|             LossV |             2.9 |
+|        DeltaLossV |           -2.17 |
+|            LossDC |               0 |
+|       DeltaLossDC |               0 |
+|                KL |       -9.44e-05 |
+|              Time |             240 |
+---------------------------------------
+context sample:  tensor(0)
+LABEL:  tensor([3])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(6)
+LABEL:  tensor([2])
+GROUND TRUTH:  tensor([[6.]])
+context sample:  tensor(9)
+LABEL:  tensor([6])
+GROUND TRUTH:  tensor([[9.]])
+context sample:  tensor(0)
+LABEL:  tensor([7])
+GROUND TRUTH:  tensor([[0.]])
+context sample:  tensor(7)
+Traceback (most recent call last):
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 328, in <module>
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 220, in valor_penalized
+    o, r, d, info = env.step(a.detach().numpy()[0])
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/engine.py", line 1247, in step
+    self.data.ctrl[:] = np.clip(action, action_range[:,0], action_range[:,1]) #np.clip(action * 2 / action_scale, -1, 1)
+  File "<__array_function__ internals>", line 5, in clip
+  File "/home/tyna/.local/lib/python3.8/site-packages/numpy/core/fromnumeric.py", line 2037, in clip
+    return _wrapfunc(a, 'clip', a_min, a_max, out=out, **kwargs)
+  File "/home/tyna/.local/lib/python3.8/site-packages/numpy/core/fromnumeric.py", line 61, in _wrapfunc
+    return bound(*args, **kwds)
+  File "/home/tyna/.local/lib/python3.8/site-packages/numpy/core/_methods.py", line 131, in _clip
+    return _clip_dep_invoke_with_casting(
+  File "/home/tyna/.local/lib/python3.8/site-packages/numpy/core/_methods.py", line 85, in _clip_dep_invoke_with_casting
+    return ufunc(*args, out=out, **kwargs)
+KeyboardInterrupt

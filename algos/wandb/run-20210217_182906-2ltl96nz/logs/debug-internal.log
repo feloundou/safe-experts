@@ -1,0 +1,40 @@
+2021-02-17 18:29:07,369 INFO    MainThread:221885 [internal.py:wandb_internal():63] W&B internal server running at pid: 221885
+2021-02-17 18:29:07,370 INFO    WriterThread:221885 [datastore.py:open_for_write():76] open: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/run-2ltl96nz.wandb
+2021-02-17 18:29:07,370 DEBUG   HandlerThread:221885 [handler.py:handle_request():55] handle_request: check_version
+2021-02-17 18:29:07,371 DEBUG   SenderThread:221885 [sender.py:send():90] send: header
+2021-02-17 18:29:07,371 DEBUG   SenderThread:221885 [sender.py:send():90] send: request
+2021-02-17 18:29:07,371 DEBUG   SenderThread:221885 [sender.py:send_request():99] send_request: check_version
+2021-02-17 18:29:07,374 DEBUG   Thread-4  :221885 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): pypi.org:443
+2021-02-17 18:29:07,485 DEBUG   Thread-4  :221885 [connectionpool.py:_make_request():428] https://pypi.org:443 "GET /pypi/wandb/json HTTP/1.1" 200 54248
+2021-02-17 18:29:07,503 DEBUG   SenderThread:221885 [sender.py:send():90] send: run
+2021-02-17 18:29:07,506 DEBUG   SenderThread:221885 [cmd.py:execute():718] Popen(['git', 'cat-file', '--batch-check'], cwd=/home/tyna/Documents/safe-experts, universal_newlines=False, shell=None, istream=<valid stream>)
+2021-02-17 18:29:07,517 DEBUG   SenderThread:221885 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-17 18:29:07,713 DEBUG   SenderThread:221885 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-17 18:29:07,721 DEBUG   HandlerThread:221885 [handler.py:handle_request():55] handle_request: run_start
+2021-02-17 18:29:07,730 DEBUG   HandlerThread:221885 [cmd.py:execute():718] Popen(['git', 'cat-file', '--batch-check'], cwd=/home/tyna/Documents/safe-experts, universal_newlines=False, shell=None, istream=<valid stream>)
+2021-02-17 18:29:07,737 INFO    SenderThread:221885 [dir_watcher.py:__init__():165] watching files in: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/files
+2021-02-17 18:29:07,737 INFO    SenderThread:221885 [sender.py:_start_run_threads():487] run started: 2ltl96nz with start time 1613604546
+2021-02-17 18:29:07,738 DEBUG   SenderThread:221885 [sender.py:send():90] send: summary
+2021-02-17 18:29:07,738 INFO    SenderThread:221885 [sender.py:_save_file():568] saving file wandb-summary.json with policy end
+2021-02-17 18:29:07,750 DEBUG   HandlerThread:221885 [cmd.py:execute():718] Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/home/tyna/Documents/safe-experts, universal_newlines=False, shell=None, istream=None)
+2021-02-17 18:29:07,803 DEBUG   SenderThread:221885 [sender.py:send():90] send: files
+2021-02-17 18:29:07,804 INFO    SenderThread:221885 [sender.py:_save_file():568] saving file wandb-metadata.json with policy now
+2021-02-17 18:29:07,808 DEBUG   Thread-11 :221885 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-17 18:29:07,809 DEBUG   HandlerThread:221885 [handler.py:handle_request():55] handle_request: status
+2021-02-17 18:29:07,809 DEBUG   SenderThread:221885 [sender.py:send():90] send: request
+2021-02-17 18:29:07,810 DEBUG   SenderThread:221885 [sender.py:send_request():99] send_request: status
+2021-02-17 18:29:07,812 DEBUG   SenderThread:221885 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-17 18:29:07,988 DEBUG   SenderThread:221885 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-17 18:29:08,006 DEBUG   Thread-11 :221885 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-17 18:29:08,020 DEBUG   Thread-11 :221885 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): storage.googleapis.com:443
+2021-02-17 18:29:08,234 DEBUG   Thread-11 :221885 [connectionpool.py:_make_request():428] https://storage.googleapis.com:443 "PUT /wandb-production.appspot.com/openai-scholars/LearningCurves/2ltl96nz/wandb-metadata.json?Expires=1613690947&GoogleAccessId=wandb-production%40appspot.gserviceaccount.com&Signature=bv4qyglPGABBiz4jkqwQk1OPLRGh1alJ%2Bd9oDKAeG%2B7Usxx715%2BhRiuDCjpQR4lpkx%2FkarNUlxHGxeszy7BXLcJUOuycnmRoTvv%2Bf467IvDYLs1CEKU5xdm5VASh%2FrvpOnzUUJYdVNJthKwYlyk8Si8AfBTBzS7m6F05Q2YXPftRndEIGzF4582TYqF4IBhIRriym7YnMKhayQdV%2FswZPExGHJqAeqiJXZxC1NAvZBhNE9vGhiz6eHZrtOI1qRs0cpI1QbZiVxzfwETbJZ4CuMl0LBXkT0mw8EjjHy%2FwRPlAISDlFSXheqr6vyAAGj%2BAc7OjOxnvi3%2Fzv0wNt%2BSs9g%3D%3D HTTP/1.1" 200 0
+2021-02-17 18:29:08,236 INFO    Thread-11 :221885 [upload_job.py:push():131] Uploaded file /tmp/tmpyhbdd_9ywandb/ue0ztkgz-wandb-metadata.json
+2021-02-17 18:29:08,739 INFO    Thread-9  :221885 [dir_watcher.py:_on_file_created():213] file/dir created: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/files/requirements.txt
+2021-02-17 18:29:08,740 INFO    Thread-9  :221885 [dir_watcher.py:_on_file_created():213] file/dir created: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/files/output.log
+2021-02-17 18:29:08,740 INFO    Thread-9  :221885 [dir_watcher.py:_on_file_created():213] file/dir created: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/files/wandb-metadata.json
+2021-02-17 18:29:08,911 WARNING MainThread:221885 [internal.py:wandb_internal():117] Internal process interrupt: 1
+2021-02-17 18:29:09,737 INFO    Thread-9  :221885 [dir_watcher.py:_on_file_modified():226] file/dir modified: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/files/output.log
+2021-02-17 18:29:09,925 DEBUG   Thread-5  :221885 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-17 18:29:10,131 DEBUG   Thread-5  :221885 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /files/openai-scholars/LearningCurves/2ltl96nz/file_stream HTTP/1.1" 200 None
+2021-02-17 18:29:10,738 INFO    Thread-9  :221885 [dir_watcher.py:_on_file_modified():226] file/dir modified: /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_182906-2ltl96nz/files/output.log
+2021-02-17 18:29:11,050 DEBUG   SenderThread:221885 [sender.py:send():90] send: stats

@@ -427,6 +427,6 @@ if __name__ == '__main__':
 
     # main(peony_config)
 
-    main(standard_config)
+    main(amaranth_config)
 
 # keep cost limits below 60-80

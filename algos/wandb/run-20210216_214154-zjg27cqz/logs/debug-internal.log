@@ -1,0 +1,142 @@
+2021-02-16 21:41:55,269 INFO    MainThread:140231 [internal.py:wandb_internal():63] W&B internal server running at pid: 140231
+2021-02-16 21:41:55,280 DEBUG   SenderThread:140231 [sender.py:send():90] send: header
+2021-02-16 21:41:55,281 INFO    WriterThread:140231 [datastore.py:open_for_write():76] open: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/run-zjg27cqz.wandb
+2021-02-16 21:41:55,281 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: check_version
+2021-02-16 21:41:55,281 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:55,281 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: check_version
+2021-02-16 21:41:55,286 DEBUG   Thread-4  :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): pypi.org:443
+2021-02-16 21:41:55,361 DEBUG   Thread-4  :140231 [connectionpool.py:_make_request():428] https://pypi.org:443 "GET /pypi/wandb/json HTTP/1.1" 200 54248
+2021-02-16 21:41:55,385 DEBUG   SenderThread:140231 [sender.py:send():90] send: run
+2021-02-16 21:41:55,388 DEBUG   SenderThread:140231 [cmd.py:execute():718] Popen(['git', 'cat-file', '--batch-check'], cwd=/home/tyna/Documents/safe-experts, universal_newlines=False, shell=None, istream=<valid stream>)
+2021-02-16 21:41:55,402 DEBUG   SenderThread:140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:55,604 DEBUG   SenderThread:140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:55,611 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: run_start
+2021-02-16 21:41:55,650 DEBUG   HandlerThread:140231 [cmd.py:execute():718] Popen(['git', 'cat-file', '--batch-check'], cwd=/home/tyna/Documents/safe-experts, universal_newlines=False, shell=None, istream=<valid stream>)
+2021-02-16 21:41:55,668 INFO    SenderThread:140231 [dir_watcher.py:__init__():165] watching files in: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files
+2021-02-16 21:41:55,668 INFO    SenderThread:140231 [sender.py:_start_run_threads():487] run started: zjg27cqz with start time 1613529714
+2021-02-16 21:41:55,668 DEBUG   SenderThread:140231 [sender.py:send():90] send: summary
+2021-02-16 21:41:55,669 INFO    SenderThread:140231 [sender.py:_save_file():568] saving file wandb-summary.json with policy end
+2021-02-16 21:41:55,670 DEBUG   HandlerThread:140231 [cmd.py:execute():718] Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/home/tyna/Documents/safe-experts, universal_newlines=False, shell=None, istream=None)
+2021-02-16 21:41:55,727 DEBUG   SenderThread:140231 [sender.py:send():90] send: files
+2021-02-16 21:41:55,727 INFO    SenderThread:140231 [sender.py:_save_file():568] saving file wandb-metadata.json with policy now
+2021-02-16 21:41:55,731 DEBUG   Thread-11 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:55,743 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: status
+2021-02-16 21:41:55,743 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:55,743 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: status
+2021-02-16 21:41:55,745 DEBUG   SenderThread:140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:55,915 DEBUG   SenderThread:140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:55,934 DEBUG   Thread-11 :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:55,957 DEBUG   Thread-11 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): storage.googleapis.com:443
+2021-02-16 21:41:56,373 DEBUG   Thread-11 :140231 [connectionpool.py:_make_request():428] https://storage.googleapis.com:443 "PUT /wandb-production.appspot.com/openai-scholars/LearningCurves/zjg27cqz/wandb-metadata.json?Expires=1613616115&GoogleAccessId=wandb-production%40appspot.gserviceaccount.com&Signature=Qv43bf2u1c9S6asgOALRZDBjrCmUMOhIQgA7VwM6mSXr%2FPHEE%2B7exeStoy2B3US4S3M%2FzfWa0f03M%2BhAkIm0anyzZy2Fb%2Fj%2Ba3IvaW35xTUbeslfgyPe5cOEH%2FuR8%2Fyouru9sDmBTzSHYqaBul4yJIEzVIIq1jdebqTdcUAy3ThLKPkvAWANIOTtYzHjrmMdW%2Bcth1zMif0bTVLWlkl5GpehDGMk9hSedq9XPGA3XHZ%2FU1qcCSYBx3746jWr814rt3PudM6I5dJWb8QC%2Bc4eyJ14wq%2BiV%2BJsDgGOb9LNZh6cGz5kj%2Bvl1qLJI0Xpo3ME1BAd%2BgkO8J0jJA05GPBYsw%3D%3D HTTP/1.1" 200 0
+2021-02-16 21:41:56,374 INFO    Thread-11 :140231 [upload_job.py:push():131] Uploaded file /tmp/tmpvhuzg9cuwandb/37wrxxi7-wandb-metadata.json
+2021-02-16 21:41:56,408 DEBUG   SenderThread:140231 [sender.py:send():90] send: exit
+2021-02-16 21:41:56,409 INFO    SenderThread:140231 [sender.py:send_exit():168] handling exit code: 1
+2021-02-16 21:41:56,409 INFO    SenderThread:140231 [sender.py:send_exit():176] send defer
+2021-02-16 21:41:56,409 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: poll_exit
+2021-02-16 21:41:56,417 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,417 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 0
+2021-02-16 21:41:56,417 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,417 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: poll_exit
+2021-02-16 21:41:56,417 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,418 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,418 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 0
+2021-02-16 21:41:56,418 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 1
+2021-02-16 21:41:56,422 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,422 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 1
+2021-02-16 21:41:56,428 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,428 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,428 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 1
+2021-02-16 21:41:56,429 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 2
+2021-02-16 21:41:56,429 DEBUG   SenderThread:140231 [sender.py:send():90] send: stats
+2021-02-16 21:41:56,429 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,429 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 2
+2021-02-16 21:41:56,430 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,430 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,430 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 2
+2021-02-16 21:41:56,430 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 3
+2021-02-16 21:41:56,430 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,430 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 3
+2021-02-16 21:41:56,431 DEBUG   SenderThread:140231 [sender.py:send():90] send: summary
+2021-02-16 21:41:56,431 INFO    SenderThread:140231 [sender.py:_save_file():568] saving file wandb-summary.json with policy end
+2021-02-16 21:41:56,431 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,431 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,431 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 3
+2021-02-16 21:41:56,431 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 4
+2021-02-16 21:41:56,432 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,432 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 4
+2021-02-16 21:41:56,432 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,432 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,432 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 4
+2021-02-16 21:41:56,432 INFO    SenderThread:140231 [dir_watcher.py:finish():279] shutting down directory watcher
+2021-02-16 21:41:56,670 INFO    Thread-9  :140231 [dir_watcher.py:_on_file_created():213] file/dir created: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/wandb-metadata.json
+2021-02-16 21:41:56,671 INFO    SenderThread:140231 [dir_watcher.py:_on_file_created():213] file/dir created: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/requirements.txt
+2021-02-16 21:41:56,671 INFO    SenderThread:140231 [dir_watcher.py:_on_file_created():213] file/dir created: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/output.log
+2021-02-16 21:41:56,671 INFO    SenderThread:140231 [dir_watcher.py:finish():309] scan: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files
+2021-02-16 21:41:56,672 INFO    SenderThread:140231 [dir_watcher.py:finish():315] scan save: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/output.log output.log
+2021-02-16 21:41:56,672 INFO    SenderThread:140231 [dir_watcher.py:finish():315] scan save: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/wandb-metadata.json wandb-metadata.json
+2021-02-16 21:41:56,672 INFO    SenderThread:140231 [dir_watcher.py:finish():315] scan save: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/requirements.txt requirements.txt
+2021-02-16 21:41:56,677 INFO    SenderThread:140231 [dir_watcher.py:finish():315] scan save: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/config.yaml config.yaml
+2021-02-16 21:41:56,677 INFO    SenderThread:140231 [dir_watcher.py:finish():315] scan save: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/wandb-summary.json wandb-summary.json
+2021-02-16 21:41:56,677 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 5
+2021-02-16 21:41:56,678 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,678 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 5
+2021-02-16 21:41:56,678 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,678 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,679 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 5
+2021-02-16 21:41:56,679 INFO    SenderThread:140231 [file_pusher.py:finish():169] shutting down file pusher
+2021-02-16 21:41:56,678 DEBUG   Thread-12 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:56,679 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 6
+2021-02-16 21:41:56,685 DEBUG   Thread-13 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:56,686 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:56,686 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 6
+2021-02-16 21:41:56,686 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:56,686 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:56,687 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 6
+2021-02-16 21:41:56,689 DEBUG   Thread-5  :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:56,699 DEBUG   Thread-14 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:56,700 DEBUG   Thread-15 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): api.wandb.ai:443
+2021-02-16 21:41:56,988 DEBUG   Thread-5  :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /files/openai-scholars/LearningCurves/zjg27cqz/file_stream HTTP/1.1" 200 None
+2021-02-16 21:41:57,113 DEBUG   Thread-5  :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /files/openai-scholars/LearningCurves/zjg27cqz/file_stream HTTP/1.1" 200 None
+2021-02-16 21:41:57,113 DEBUG   Thread-12 :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:57,114 DEBUG   Thread-13 :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:57,114 DEBUG   Thread-15 :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:57,115 DEBUG   Thread-14 :140231 [connectionpool.py:_make_request():428] https://api.wandb.ai:443 "POST /graphql HTTP/1.1" 200 None
+2021-02-16 21:41:57,128 DEBUG   Thread-14 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): storage.googleapis.com:443
+2021-02-16 21:41:57,116 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 7
+2021-02-16 21:41:57,129 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:57,129 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 7
+2021-02-16 21:41:57,132 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:57,133 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:57,133 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 7
+2021-02-16 21:41:57,133 INFO    SenderThread:140231 [sender.py:send_request_defer():221] send defer: 8
+2021-02-16 21:41:57,134 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: defer
+2021-02-16 21:41:57,134 INFO    HandlerThread:140231 [handler.py:handle_request_defer():69] handle defer: 8
+2021-02-16 21:41:57,134 DEBUG   SenderThread:140231 [sender.py:send():90] send: final
+2021-02-16 21:41:57,134 DEBUG   SenderThread:140231 [sender.py:send():90] send: footer
+2021-02-16 21:41:57,135 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:57,135 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: defer
+2021-02-16 21:41:57,135 INFO    SenderThread:140231 [sender.py:send_request_defer():185] handle sender defer: 8
+2021-02-16 21:41:57,138 DEBUG   Thread-13 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): storage.googleapis.com:443
+2021-02-16 21:41:57,139 DEBUG   Thread-12 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): storage.googleapis.com:443
+2021-02-16 21:41:57,140 DEBUG   Thread-15 :140231 [connectionpool.py:_new_conn():957] Starting new HTTPS connection (1): storage.googleapis.com:443
+2021-02-16 21:41:57,523 DEBUG   Thread-14 :140231 [connectionpool.py:_make_request():428] https://storage.googleapis.com:443 "PUT /wandb-production.appspot.com/openai-scholars/LearningCurves/zjg27cqz/config.yaml?Expires=1613616117&GoogleAccessId=wandb-production%40appspot.gserviceaccount.com&Signature=ihqzGdOZ7kxYHbbugC9uAVSPX6EvlMUUushCe5nYxV8Yi7bNrb%2F9V%2FY3rd6Fy2LucbkN39SFdm5s0hTn4echLWlbH8RDP0tEe6aiMEVsTwvnI89cbp7EPpObCNf5w1UOwiCxpR%2BKrv7BC4FHj3aAC4h67p%2Fmac5q0DNJ7pHTLVjss2yok0lVW1QVDUKQj28Lvv6lYuuNcSpYFdJKn9C1EUCqL6AZN%2BtLtVAK7qbgHQjDLh4X9gOop%2BCJz42rtEPWASX8q4Y9s6los6SAb%2B4RJMzSpEso%2FLBQd5nTMCHQkb4jVHtgPk2UjFa6DhH2vZ1Vx212HGFH73vcbrt2QT3F5A%3D%3D HTTP/1.1" 200 0
+2021-02-16 21:41:57,523 DEBUG   Thread-13 :140231 [connectionpool.py:_make_request():428] https://storage.googleapis.com:443 "PUT /wandb-production.appspot.com/openai-scholars/LearningCurves/zjg27cqz/requirements.txt?Expires=1613616117&GoogleAccessId=wandb-production%40appspot.gserviceaccount.com&Signature=BafsRxW1Z8to%2BU1faLAEPmp24yOJGzOuHUJy0qdJo2k3yE%2Byct8sB4owzWBZAtL2sxb8aFju%2BUFs3%2F%2F4FNPViaGeSKqpFiLJT6QVtg%2BigS4acIj3qOQQshHD0ToH8Mafp9z6YS8D1GZ19R3t616g7G%2FomnoWbVdmMtRcXYBdPClKBb3wZQf1g1hFnjfNLdKvCi89MCgzEtHS3n0%2BNtVUjxYQmaKM9mSwxJjYSkKKb5D7fR2Yq9MqsBpHNoO9keXY1QjiCEzxWVC8JKSjk74eMfREMDDScjFbROvxl6RydN2Vx2Bwp7jwmAWgWmQjtdXTddV8LPw%2FIjGxk7IFiLzSRQ%3D%3D HTTP/1.1" 200 0
+2021-02-16 21:41:57,523 DEBUG   Thread-15 :140231 [connectionpool.py:_make_request():428] https://storage.googleapis.com:443 "PUT /wandb-production.appspot.com/openai-scholars/LearningCurves/zjg27cqz/wandb-summary.json?Expires=1613616117&GoogleAccessId=wandb-production%40appspot.gserviceaccount.com&Signature=O7pS2WxuDaMYJ4gBq70U4lvHA1iMCv6ES8hlE%2ByUna0gkNATPCOndfTkOrHI710H7y6w4Ggvt%2BC0L7Yyjy9HmdO5MNXyayXaPRy6Se10HPH8TPF7I%2BDW%2BBAq%2FUuRvEn2KVvGRyeoIRRhlCYkNC4vVRyT4wB%2Fwj9hqGWnG%2FZyqLt6MoyysscNcIC9afbibjt3kM6htC9Y2OUj%2BFwsQ2mc8qBjR9BvKKPyp2K0orIN%2FVWPbTKdX3TVcZWUmuVdtpgHHznm0J25MuXORcrXT91iNDqBIRQ1OfIEaIlIukjc%2Be%2Bd66V5CdRD6y9Swfax8R%2FbjKhOWLZSoMsPMF5KVeWKNw%3D%3D HTTP/1.1" 200 0
+2021-02-16 21:41:57,524 DEBUG   Thread-12 :140231 [connectionpool.py:_make_request():428] https://storage.googleapis.com:443 "PUT /wandb-production.appspot.com/openai-scholars/LearningCurves/zjg27cqz/output.log?Expires=1613616117&GoogleAccessId=wandb-production%40appspot.gserviceaccount.com&Signature=dhHFXwyoVAkWAT8KJvYrv%2FQkzB9a%2B516sS9aUuH9iCIoKZ3c7PSL5q8Yiaq3uFeH10wYnXhGSm5E3JWC6xYEJMGWM6uvYyVeDUWpIHye%2FKjVw58kdOYt%2Fbo4oYLxy8H0J9hUbLtDAt3atpvGIz1BbPpKCfaV1s1D%2BXRJR46VlfjhLecWVS33dmDU2fPzApkKYwaw2NA0X9AF6l%2FHvaC9rZZmOcNkHqkVbfHf4vh6GVsFai1nEngIiMSae3MJfNsTde6acQIvIxHmAonv7PGQqKXqprUvwHT1QuDVyswDNzN7FmZyhtAOLyqhA0CdIw2RMCmmk%2BXc%2BWmDbqB9eqa7%2Bg%3D%3D HTTP/1.1" 200 0
+2021-02-16 21:41:57,525 INFO    Thread-13 :140231 [upload_job.py:push():131] Uploaded file /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/requirements.txt
+2021-02-16 21:41:57,525 INFO    Thread-14 :140231 [upload_job.py:push():131] Uploaded file /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/config.yaml
+2021-02-16 21:41:57,527 INFO    Thread-15 :140231 [upload_job.py:push():131] Uploaded file /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/wandb-summary.json
+2021-02-16 21:41:57,527 INFO    Thread-12 :140231 [upload_job.py:push():131] Uploaded file /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/files/output.log
+2021-02-16 21:41:58,429 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: poll_exit
+2021-02-16 21:41:58,429 DEBUG   SenderThread:140231 [sender.py:send():90] send: request
+2021-02-16 21:41:58,429 DEBUG   SenderThread:140231 [sender.py:send_request():99] send_request: poll_exit
+2021-02-16 21:41:58,429 INFO    SenderThread:140231 [file_pusher.py:join():174] waiting for file pusher
+2021-02-16 21:41:58,437 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: get_summary
+2021-02-16 21:41:58,440 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: sampled_history
+2021-02-16 21:41:58,443 DEBUG   HandlerThread:140231 [handler.py:handle_request():55] handle_request: shutdown
+2021-02-16 21:41:58,443 INFO    HandlerThread:140231 [handler.py:finish():271] shutting down handler
+2021-02-16 21:41:59,134 INFO    WriterThread:140231 [datastore.py:close():257] close: /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214154-zjg27cqz/run-zjg27cqz.wandb
+2021-02-16 21:41:59,429 INFO    SenderThread:140231 [sender.py:finish():642] shutting down sender
+2021-02-16 21:41:59,429 INFO    SenderThread:140231 [file_pusher.py:finish():169] shutting down file pusher
+2021-02-16 21:41:59,429 INFO    SenderThread:140231 [file_pusher.py:join():174] waiting for file pusher
+2021-02-16 21:41:59,430 INFO    MainThread:140231 [internal.py:handle_exit():138] Internal process exited

@@ -1,0 +1,16 @@
+2021-02-16 21:41:50,208 INFO    MainThread:140146 [wandb_setup.py:_flush():70] setting env: {}
+2021-02-16 21:41:50,208 INFO    MainThread:140146 [wandb_setup.py:_flush():70] multiprocessing start_methods=fork,spawn,forkserver
+2021-02-16 21:41:50,208 INFO    MainThread:140146 [wandb_setup.py:_flush():70] setting login settings: {}
+2021-02-16 21:41:50,208 INFO    MainThread:140146 [wandb_setup.py:_flush():70] setting login settings: {}
+2021-02-16 21:41:50,208 INFO    MainThread:140146 [wandb_init.py:_log_setup():303] Logging user logs to /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214150-1isitsbm/logs/debug.log
+2021-02-16 21:41:50,208 INFO    MainThread:140146 [wandb_init.py:_log_setup():304] Logging internal logs to /home/tyna/Documents/safe-experts/algos/wandb/run-20210216_214150-1isitsbm/logs/debug-internal.log
+2021-02-16 21:41:51,207 INFO    MainThread:140146 [wandb_run.py:_console_start():1237] atexit reg
+2021-02-16 21:41:51,208 INFO    MainThread:140146 [wandb_run.py:_redirect():1104] redirect: SettingsConsole.REDIRECT
+2021-02-16 21:41:51,208 INFO    MainThread:140146 [wandb_run.py:_redirect():1107] Redirecting console.
+2021-02-16 21:41:51,208 INFO    MainThread:140146 [redirect.py:install():204] install start
+2021-02-16 21:41:51,209 INFO    MainThread:140146 [redirect.py:install():219] install stop
+2021-02-16 21:41:51,209 INFO    MainThread:140146 [redirect.py:install():204] install start
+2021-02-16 21:41:51,209 INFO    MainThread:140146 [redirect.py:install():219] install stop
+2021-02-16 21:41:51,209 INFO    MainThread:140146 [wandb_run.py:_redirect():1151] Redirects installed.
+2021-02-16 22:10:00,874 INFO    MainThread:140146 [wandb_run.py:_config_callback():549] config_cb None None {'_wandb': {'cli_version': '0.10.12', 'python_version': '3.8.5', 'is_jupyter_run': False, 'is_kaggle_kernel': False, 'framework': 'torch'}, 'env': 'Safexp-PointGoal1-v0', 'agent': 'ppo-lagrange', 'hid': 64, 'l': 2, 'gamma': 0.99, 'cost_gamma': 0.99, 'seed': 0, 'cpu': 1, 'steps': 8000, 'epochs': 50, 'cost_lim': 25, 'config_name': 'standard', 'penalty_lr': 0.005, 'exp_name': 'ppo_safe'}
+2021-02-16 22:10:00,874 INFO    MainThread:140146 [wandb_run.py:finish():914] finishing run openai-scholars/gail-experts-1000epochs/1isitsbm

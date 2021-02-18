@@ -1,8 +1,8 @@
 {
     "ac_kwargs":	{
         "hidden_dims":	[
-            64,
-            64
+            128,
+            128
         ]
     },
     "actor_critic":	"ActorCritic",
@@ -10,13 +10,16 @@
     "composite_name":	"new_valor_penalized_standard",
     "con_dim":	10,
     "config_name":	"standard",
-    "cost_lim":	25,
+    "cost_lim":	50,
     "dc_kwargs":	{
-        "hidden_dims":	64
+        "hidden_dims":	[
+            128,
+            128
+        ]
     },
     "dc_lr":	0.0005,
     "disc":	"ValorDiscriminator",
-    "env_fn":	"<function <lambda> at 0x7fa8ffc94a60>",
+    "env_fn":	"<function <lambda> at 0x7fd4b1a624c0>",
     "episodes_per_epoch":	5,
     "epochs":	1000,
     "exp_name":	"valor-anonymous-expert",
@@ -24,15 +27,15 @@
     "k":	1,
     "lam":	0.97,
     "logger":	{
-        "<utils.EpochLogger object at 0x7fa9811a03a0>":	{
+        "<utils.EpochLogger object at 0x7fd532f7a3a0>":	{
             "epoch_dict":	{},
             "exp_name":	"valor-anonymous-expert",
             "first_row":	true,
             "log_current_row":	{},
             "log_headers":	[],
-            "output_dir":	"/home/tyna/Documents/openai/research-project/data/valor-anonymous-expert/valor-anonymous-expert_s0",
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0",
             "output_file":	{
-                "<_io.TextIOWrapper name='/home/tyna/Documents/openai/research-project/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
                     "mode":	"w"
                 }
             }
@@ -40,7 +43,7 @@
     },
     "logger_kwargs":	{
         "exp_name":	"valor-anonymous-expert",
-        "output_dir":	"/home/tyna/Documents/openai/research-project/data/valor-anonymous-expert/valor-anonymous-expert_s0"
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0"
     },
     "max_ep_len":	1000,
     "penalty_init":	1.0,

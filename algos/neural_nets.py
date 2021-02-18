@@ -59,16 +59,14 @@ class MLPGaussianActor(Actor):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-<<<<<<< HEAD
+
         # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
         # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        self.log_std = nn.Parameter(-0.5 * torch.ones(act_dim))
-=======
+        # self.log_std = nn.Parameter(-0.5 * torch.ones(act_dim))
         log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
         self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        print("test list")
-        print(list(hidden_sizes))
->>>>>>> parent of b84a2cf... gail and vail implementations
+        # print("test list")
+        # print(list(hidden_sizes))
         self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
     def _distribution(self, obs):
@@ -88,12 +86,20 @@ class GaussianPolicy(nn.Module):
         self.mu = MLP(layers=[input_dim] + list(hidden_dims) + [action_dim], activation=activation,
                       output_activation=output_activation)
 
-    def forward(self, x, a=None):
+    def forward(self, x, act=None):
         policy = Normal(self.mu(x), self.log_std.exp())
         pi = policy.sample()
         logp_pi = policy.log_prob(pi).sum(dim=1)
-        if a is not None:
-            logp = policy.log_prob(a).sum(dim=1)
+
+
+        if act is not None:
+            logp = policy.log_prob(act).sum(dim=1)
+
+            # print("gaussian action: ", act)
+            # print("pi:", pi)
+            # print("log pi:", logp_pi)
+            # print("logp:", logp)
+
         else:
             logp = None
 
@@ -279,7 +285,6 @@ class VDB(nn.Module):
         mu, logvar = self.encoder(x)
         z = self.reparameterize(mu, logvar)
         prob = self.discriminator(z)
-<<<<<<< HEAD
         return prob, mu, logvar
 
 
@@ -308,24 +313,24 @@ class MLP(nn.Module):
 
 
 
-class CategoricalPolicy(nn.Module):
-    def __init__(self, input_dim, hidden_dims, activation, output_activation, action_dim):
-        super(CategoricalPolicy, self).__init__()
-
-        print("Categorical policy used.")
-        self.logits = MLP(layers=[input_dim] + list(hidden_dims) + [action_dim], activation=activation)
-
-    def forward(self, x, a=None):
-        logits = self.logits(x)
-        policy = Categorical(logits=logits)
-        pi = policy.sample()
-        logp_pi = policy.log_prob(pi).squeeze()
-        if a is not None:
-            logp = policy.log_prob(a).squeeze()
-        else:
-            logp = None
-
-        return pi, logp, logp_pi
+# class CategoricalPolicy(nn.Module):
+#     def __init__(self, input_dim, hidden_dims, activation, output_activation, action_dim):
+#         super(CategoricalPolicy, self).__init__()
+#
+#         print("Categorical policy used.")
+#         self.logits = MLP(layers=[input_dim] + list(hidden_dims) + [action_dim], activation=activation)
+#
+#     def forward(self, x, a=None):
+#         logits = self.logits(x)
+#         policy = Categorical(logits=logits)
+#         pi = policy.sample()
+#         logp_pi = policy.log_prob(pi).squeeze()
+#         if a is not None:
+#             logp = policy.log_prob(a).squeeze()
+#         else:
+#             logp = None
+#
+#         return pi, logp, logp_pi
 
 
 
@@ -338,7 +343,10 @@ class BLSTMPolicy(nn.Module):
 
     def forward(self, seq, gt=None):
         inter_states, _ = self.lstm(seq)
+        print("inter states: ", inter_states)
         logit_seq = self.linear(inter_states)
+        print("LOGIT SEQ")
+        print(logit_seq)
         self.logits = torch.mean(logit_seq, dim=1)
         policy = Categorical(logits=self.logits)
         label = policy.sample()
@@ -350,11 +358,44 @@ class BLSTMPolicy(nn.Module):
 
         return label, loggt, logp
 
-class ValorDiscriminator(nn.Module):
-    def __init__(self, input_dim, context_dim, activation=torch.softmax, output_activation=torch.softmax, hidden_dims=64):
-        super(ValorDiscriminator, self).__init__()
 
-        self.pi = BLSTMPolicy(input_dim, hidden_dims, activation, output_activation, context_dim)
+class ValorFFNNPolicy(nn.Module):
+    def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
+        super(ValorFFNNPolicy, self).__init__()
+
+        self.context_net = mlp([input_dim] + list(hidden_dims) , activation)
+        self.linear = nn.Linear(hidden_dims[-1], con_dim)
+
+
+    def forward(self, seq, gt=None):
+
+        inter_states = self.context_net(seq)
+        logit_seq = self.linear(inter_states)
+        # print(logit_seq)
+        self.logits = torch.mean(logit_seq, dim=1)
+        policy = Categorical(logits=self.logits)
+        label = policy.sample()
+        print("LABEL: ", label)
+        logp = policy.log_prob(label).squeeze()
+        if gt is not None:
+            print('GROUND TRUTH: ', gt)
+            loggt = policy.log_prob(gt).squeeze()
+        else:
+            loggt = None
+
+        return label, loggt, logp
+
+class ValorDiscriminator(nn.Module):
+    def __init__(self, input_dim, context_dim, activation=nn.Softmax,
+                 output_activation=nn.Softmax, hidden_dims=64):
+
+        super(ValorDiscriminator, self).__init__()
+        self.context_dim = context_dim
+
+        # self.pi = BLSTMPolicy(input_dim, hidden_dims, activation=torch.softmax,
+        # output_activation=torch.softmax, con_dim=self.context_dim)
+        self.pi = ValorFFNNPolicy(input_dim, hidden_dims, activation=nn.Tanh,
+                                  output_activation=nn.Tanh, con_dim=self.context_dim)
 
     def forward(self, seq, gt=None):
         pred, loggt, logp = self.pi(seq, gt)
@@ -362,6 +403,3 @@ class ValorDiscriminator(nn.Module):
 
 
 
-=======
-        return prob, mu, logvar
->>>>>>> parent of b84a2cf... gail and vail implementations

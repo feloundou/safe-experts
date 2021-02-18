@@ -1,0 +1,14 @@
+2021-02-17 18:50:48,147 INFO    MainThread:226008 [wandb_setup.py:_flush():70] setting env: {}
+2021-02-17 18:50:48,147 INFO    MainThread:226008 [wandb_setup.py:_flush():70] multiprocessing start_methods=fork,spawn,forkserver
+2021-02-17 18:50:48,147 INFO    MainThread:226008 [wandb_setup.py:_flush():70] setting login settings: {}
+2021-02-17 18:50:48,147 INFO    MainThread:226008 [wandb_setup.py:_flush():70] setting login settings: {}
+2021-02-17 18:50:48,148 INFO    MainThread:226008 [wandb_init.py:_log_setup():303] Logging user logs to /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_185048-yr39fqa2/logs/debug.log
+2021-02-17 18:50:48,148 INFO    MainThread:226008 [wandb_init.py:_log_setup():304] Logging internal logs to /home/tyna/Documents/safe-experts/algos/wandb/run-20210217_185048-yr39fqa2/logs/debug-internal.log
+2021-02-17 18:50:49,477 INFO    MainThread:226008 [wandb_run.py:_console_start():1237] atexit reg
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [wandb_run.py:_redirect():1104] redirect: SettingsConsole.REDIRECT
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [wandb_run.py:_redirect():1107] Redirecting console.
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [redirect.py:install():204] install start
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [redirect.py:install():219] install stop
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [redirect.py:install():204] install start
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [redirect.py:install():219] install stop
+2021-02-17 18:50:49,478 INFO    MainThread:226008 [wandb_run.py:_redirect():1151] Redirects installed.

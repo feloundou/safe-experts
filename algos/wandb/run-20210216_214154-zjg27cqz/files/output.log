@@ -1,0 +1,101 @@
+Warning: Log dir /home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0 already exists! Storing info there anyway.
+here is the output file:  <_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>
+[32;1mLogging data to /home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt[0m
+[36;1mSaving config:
+[0m
+{
+    "ac_kwargs":	{
+        "hidden_dims":	[
+            64,
+            64
+        ]
+    },
+    "actor_critic":	"ActorCritic",
+    "clip_ratio":	0.2,
+    "composite_name":	"new_valor_penalized_standard",
+    "con_dim":	10,
+    "config_name":	"standard",
+    "cost_lim":	25,
+    "dc_kwargs":	{
+        "hidden_dims":	64
+    },
+    "dc_lr":	0.0005,
+    "disc":	"ValorDiscriminator",
+    "env_fn":	"<function <lambda> at 0x7f9c5ba0f3a0>",
+    "episodes_per_epoch":	5,
+    "epochs":	1000,
+    "exp_name":	"valor-anonymous-expert",
+    "gamma":	0.99,
+    "k":	1,
+    "lam":	0.97,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f9cdcf27370>":	{
+            "epoch_dict":	{},
+            "exp_name":	"valor-anonymous-expert",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"valor-anonymous-expert",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/valor-anonymous-expert/valor-anonymous-expert_s0"
+    },
+    "max_ep_len":	1000,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.005,
+    "pi_lr":	0.0003,
+    "save_freq":	10,
+    "seed":	0,
+    "train_dc_interv":	10,
+    "train_dc_iters":	10,
+    "train_pi_iters":	1,
+    "train_v_iters":	80,
+    "vf_lr":	0.001
+}
+Traceback (most recent call last):
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 281, in <module>
+    valor_penalized(lambda: gym.make(args.env), actor_critic=ActorCritic, ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 54, in valor_penalized
+    env = env_fn()
+  File "/home/tyna/Documents/safe-experts/algos/train_expert_valor_penalized.py", line 281, in <lambda>
+    valor_penalized(lambda: gym.make(args.env), actor_critic=ActorCritic, ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
+  File "/home/tyna/.local/lib/python3.8/site-packages/gym/envs/registration.py", line 156, in make
+    return registry.make(id, **kwargs)
+  File "/home/tyna/.local/lib/python3.8/site-packages/gym/envs/registration.py", line 101, in make
+    env = spec.make(**kwargs)
+  File "/home/tyna/.local/lib/python3.8/site-packages/gym/envs/registration.py", line 72, in make
+    cls = load(self.entry_point)
+  File "/home/tyna/.local/lib/python3.8/site-packages/gym/envs/registration.py", line 17, in load
+    mod = importlib.import_module(mod_name)
+  File "/usr/lib/python3.8/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1014, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 783, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/mujoco.py", line 9, in <module>
+    from safety_gym.envs.engine import *  # noqa
+  File "/home/tyna/Documents/safety-gym/safety_gym/envs/engine.py", line 9, in <module>
+    import mujoco_py
+  File "/home/tyna/.local/lib/python3.8/site-packages/mujoco_py/__init__.py", line 3, in <module>
+    from mujoco_py.builder import cymj, ignore_mujoco_warnings, functions, MujocoException
+  File "/home/tyna/.local/lib/python3.8/site-packages/mujoco_py/builder.py", line 506, in <module>
+    cymj = load_cython_ext(mujoco_path)
+  File "/home/tyna/.local/lib/python3.8/site-packages/mujoco_py/builder.py", line 69, in load_cython_ext
+    _ensure_set_env_var("LD_LIBRARY_PATH", lib_path)
+  File "/home/tyna/.local/lib/python3.8/site-packages/mujoco_py/builder.py", line 115, in _ensure_set_env_var
+    raise Exception("\nMissing path to your environment variable. \n"
+Exception: 
+Missing path to your environment variable. 
+Current values LD_LIBRARY_PATH=
+Please add following line to .bashrc:
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/tyna/.mujoco/mujoco200/bin
