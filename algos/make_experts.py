@@ -7,6 +7,7 @@ import safety_gym
 from ppo_algos import MLPActorCritic
 from utils import setup_logger_kwargs, mpi_fork
 
+
 ENV_NAME = 'Safexp-PointGoal1-v0'
 
 
@@ -18,7 +19,6 @@ ENV_NAME = 'Safexp-PointGoal1-v0'
 #                 seed=0,
 #                 penalty_init=5e-3)
 #
-<<<<<<< HEAD
 #     mpi_fork(10)  # run parallel code with mpi
 #
 #     CONFIG_LIST2 = CONFIG_LIST
@@ -54,9 +54,8 @@ ENV_NAME = 'Safexp-PointGoal1-v0'
 #                              logger_kwargs=logger_kwargs_BIG)
 #
 #         print("just finished!")
-=======
 # logger_kwargs = setup_logger_kwargs('STANDARDTEST', 0)
->>>>>>> parent of b84a2cf... gail and vail implementations
+
 #
 # expert.ppo_train(env_fn=lambda: gym.make(ENV_NAME),
 #                  epochs=50,

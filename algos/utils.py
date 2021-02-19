@@ -1331,7 +1331,7 @@ class VALORBuffer(object):
         self.eps = 0
         self.dc_eps = 0
 
-        self.N = 11
+        self.N = 8
 
         self.con = np.zeros(self.max_batch * self.dc_interv)
         self.dcbuf = np.zeros((self.max_batch * self.dc_interv, self.N-1, obs_dim))
@@ -1361,22 +1361,12 @@ class VALORBuffer(object):
             prev = int(i*ep_l/(self.N-1))
             succ = int((i+1)*ep_l/(self.N-1))
 
-            # prev = int(i*ep_l)
-            # succ = int((i+1)*ep_l)
-
-            # print("previous:", prev)
-            # print("obs")
-            # print(self.obs[start + succ][:self.obs_dim].shape)
-            #
-            # print("successive:",succ)
-            # print("obs")
-            # print(self.obs[start + prev][:self.obs_dim])
-
             self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
 
         return self.dcbuf[self.eps]
 
-    def finish_path(self, pret_pos, last_val=0): # pret_pos gives the log possibility of cheating the discriminator
+    def finish_path(self, pret_pos, last_val=0):
+        # pret_pos gives the log possibility of cheating the discriminator
         ep_slice = slice(int(self.end[self.eps]), self.ptr)
         rewards = np.append(self.rew[ep_slice], last_val)
         values = np.append(self.val[ep_slice], last_val)
@@ -1409,6 +1399,94 @@ class VALORBuffer(object):
         return [self.con, self.dcbuf]
 
 
+
+
+class PureVALORBuffer(object):
+    def __init__(self, con_dim, obs_dim, act_dim, batch_size, ep_len, dc_interv, gamma=0.99, lam=0.95, N=11):
+        self.max_batch = batch_size
+        self.dc_interv = dc_interv
+        self.max_s = batch_size * ep_len
+        self.obs_dim = obs_dim
+        self.obs = np.zeros((self.max_s, obs_dim + con_dim))
+        self.act = np.zeros((self.max_s, act_dim))
+        self.rew = np.zeros(self.max_s)
+        # self.cost = np.zeros(self.max_s)
+        # self.ret = np.zeros(self.max_s)
+        # self.adv = np.zeros(self.max_s)
+        self.pos = np.zeros(self.max_s)
+        self.lgt = np.zeros(self.max_s)
+        self.val = np.zeros(self.max_s)
+        self.end = np.zeros(batch_size + 1) # The first will always be 0
+        self.ptr = 0
+        self.eps = 0
+        self.dc_eps = 0
+
+        self.N = 11
+
+        self.con = np.zeros(self.max_batch * self.dc_interv)
+        self.dcbuf = np.zeros((self.max_batch * self.dc_interv, self.N-1, obs_dim))
+
+        self.gamma = gamma
+        self.lam = lam
+
+    def store(self, con, obs, act):
+
+        assert self.ptr < self.max_s
+        self.obs[self.ptr] = obs
+        self.act[self.ptr] = act
+        self.con[self.eps] = con
+
+        self.ptr += 1
+
+    def calc_diff(self):   # make life easier and calculate the difference before passing to buffer
+        # Store differences into a specific memory
+        # TODO: convert this into vector operation
+        start = int(self.end[self.eps])
+        ep_l = self.ptr - start - 1
+        # print("what is the start:", start)
+        for i in range(self.N-1):
+        # for i in range(1000):
+
+            prev = int(i*ep_l/(self.N-1))
+            succ = int((i+1)*ep_l/(self.N-1))
+            # print("prev:", prev)
+            # print("succ:", succ)
+            # print("obs", self.obs)
+            # print("start:", self.obs[start + succ][:self.obs_dim])
+            # print("end:", self.obs[start + prev][:self.obs_dim])
+
+            self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
+
+        return self.dcbuf[self.eps]
+
+    def finish_path(self, pret_pos, last_val=0):
+        # pret_pos gives the log possibility of cheating the discriminator
+        ep_slice = slice(int(self.end[self.eps]), self.ptr)
+        rewards = np.append(self.rew[ep_slice], last_val)
+        values = np.append(self.val[ep_slice], last_val)
+
+        self.pos[ep_slice] = pret_pos
+
+        self.eps += 1
+        self.dc_eps += 1
+        self.end[self.eps] = self.ptr
+
+    def retrieve_all(self):
+        assert self.eps == self.max_batch
+        occup_slice = slice(0, self.ptr)
+        self.ptr = 0
+        self.eps = 0
+
+        return [self.obs[occup_slice], self.act[occup_slice],
+                ]
+
+    def retrieve_dc_buff(self):
+        # print("dc eps", self.dc_eps)
+        # print("max batch", self.max_batch)
+        # print("dc_interval", self.dc_interv )
+        assert self.dc_eps == self.max_batch * self.dc_interv
+        self.dc_eps = 0
+        return [self.con, self.dcbuf]
 
 # # Set up function for computing PPO policy loss
 # def compute_loss_policy(obs, act, adv, logp_old):

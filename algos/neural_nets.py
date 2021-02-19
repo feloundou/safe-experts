@@ -334,29 +334,29 @@ class MLP(nn.Module):
 
 
 
-class BLSTMPolicy(nn.Module):
-    def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
-        super(BLSTMPolicy, self).__init__()
-        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dims//2, batch_first=True, bidirectional=True)
-        self.linear = nn.Linear(hidden_dims, con_dim)
-        nn.init.zeros_(self.linear.bias)
-
-    def forward(self, seq, gt=None):
-        inter_states, _ = self.lstm(seq)
-        print("inter states: ", inter_states)
-        logit_seq = self.linear(inter_states)
-        print("LOGIT SEQ")
-        print(logit_seq)
-        self.logits = torch.mean(logit_seq, dim=1)
-        policy = Categorical(logits=self.logits)
-        label = policy.sample()
-        logp = policy.log_prob(label).squeeze()
-        if gt is not None:
-            loggt = policy.log_prob(gt).squeeze()
-        else:
-            loggt = None
-
-        return label, loggt, logp
+# class BLSTMPolicy(nn.Module):
+#     def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
+#         super(BLSTMPolicy, self).__init__()
+#         self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dims//2, batch_first=True, bidirectional=True)
+#         self.linear = nn.Linear(hidden_dims, con_dim)
+#         nn.init.zeros_(self.linear.bias)
+#
+#     def forward(self, seq, gt=None):
+#         inter_states, _ = self.lstm(seq)
+#         print("inter states: ", inter_states)
+#         logit_seq = self.linear(inter_states)
+#         print("LOGIT SEQ")
+#         print(logit_seq)
+#         self.logits = torch.mean(logit_seq, dim=1)
+#         policy = Categorical(logits=self.logits)
+#         label = policy.sample()
+#         logp = policy.log_prob(label).squeeze()
+#         if gt is not None:
+#             loggt = policy.log_prob(gt).squeeze()
+#         else:
+#             loggt = None
+#
+#         return label, loggt, logp
 
 
 class ValorFFNNPolicy(nn.Module):
@@ -366,25 +366,27 @@ class ValorFFNNPolicy(nn.Module):
         self.context_net = mlp([input_dim] + list(hidden_dims), activation)
         self.linear = nn.Linear(hidden_dims[-1], con_dim)
 
-
-    def forward(self, seq, gt=None):
+    def forward(self, seq, gt=None, classes=False):
         inter_states = self.context_net(seq)
         logit_seq = self.linear(inter_states)
-        # print(logit_seq)
-        # print("log sequence shape")
-        # print(logit_seq.shape)
         self.logits = torch.mean(logit_seq, dim=1)
         policy = Categorical(logits=self.logits)
         label = policy.sample()
-        print("LABEL: ", label)
+        # print("LABEL: ", label)
         logp = policy.log_prob(label).squeeze()
+
         if gt is not None:
-            print('GROUND TRUTH: ', gt)
+            # print('GROUND TRUTH: ', gt)
+            # ground_truth_ids = gt.argmax(axis=1)
+            # print("ground truth ids", ground_truth_ids)
             loggt = policy.log_prob(gt).squeeze()
         else:
             loggt = None
 
-        return label, loggt, logp
+        if classes is False:
+            return label, loggt, logp
+        else:
+            return label, loggt, logp, gt
 
 
 class ValorDiscriminator(nn.Module):
@@ -399,9 +401,14 @@ class ValorDiscriminator(nn.Module):
         self.pi = ValorFFNNPolicy(input_dim, hidden_dims, activation=nn.Tanh,
                                   output_activation=nn.Tanh, con_dim=self.context_dim)
 
-    def forward(self, seq, gt=None):
-        pred, loggt, logp = self.pi(seq, gt)
-        return pred, loggt, logp
+    def forward(self, seq, gt=None, classes=False):
+        if classes is False:
+            pred, loggt, logp = self.pi(seq, gt, classes)
+            return pred, loggt, logp
+
+        else:
+            pred, loggt, logp, gt = self.pi(seq, gt, classes)
+            return pred, loggt, logp, gt
 
 
 

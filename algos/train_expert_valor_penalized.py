@@ -9,15 +9,13 @@ import os.path as osp
 
 from torch.distributions.categorical import Categorical
 
-from neural_nets import ActorCritic, ValorDiscriminator, count_vars, mpi_avg_grads, mpi_sum
+from neural_nets import ActorCritic, ValorDiscriminator
 
 import wandb
 
 from utils import VALORBuffer
 from utils import mpi_fork, proc_id, num_procs, EpochLogger,\
-     setup_pytorch_for_mpi, sync_params, mpi_avg_grads
-
-
+     setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars,  mpi_sum
 
 def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
           disc=ValorDiscriminator, dc_kwargs=dict(), seed=0,
@@ -73,8 +71,7 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
     buffer = VALORBuffer(con_dim, obs_dim[0], act_dim[0], local_episodes_per_epoch, max_ep_len, train_dc_interv)
 
     # Count variables
-    var_counts = tuple(count_vars(module) for module in
-                       [ac.pi, ac.v, discrim.pi])
+    var_counts = tuple(count_vars(module) for module in  [ac.pi, ac.v, discrim.pi])
     logger.log('\nNumber of parameters: \t pi: %d, \t v: %d, \t d: %d\n' % var_counts)
 
     # Optimizers
@@ -98,11 +95,8 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
     # sync_all_params(ac.parameters())
     # sync_all_params(disc.parameters())
 
-    def penalty_update(cur_penalty):
+    def penalty_update(cur_penalty):  # update penalty
         cur_cost = logger.get_stats('EpCost')[0]
-        cur_rew = logger.get_stats('EpRet')[0]
-
-        # Penalty update
         cur_penalty = max(0, cur_penalty + penalty_lr * (cur_cost - cost_lim))
         return cur_penalty
 
@@ -251,6 +245,7 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
                     dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
                     con = torch.Tensor([float(c)]).unsqueeze(0)
                     # _, _, log_p = discrim(dc_diff, con)
+                    print("context going into discrim:", con)
                     _, log_p, _ = discrim(dc_diff, con)
                     # look at the bug, should take the second output instead of log_p ///
                     # instead of doing average over sequence dimension, do not need to average reward,
@@ -324,7 +319,7 @@ if __name__ == '__main__':
     # parser.add_argument('--episodes-per-epoch', type=int, default=40)
     parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--exp_name', type=str, default='valor-anonymous-expert')
-    parser.add_argument('--con', type=int, default=10)
+    parser.add_argument('--con', type=int, default=5)
     args = parser.parse_args()
 
     mpi_fork(args.cpu)
@@ -333,7 +328,8 @@ if __name__ == '__main__':
 
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
-    valor_penalized(lambda: gym.make(args.env), actor_critic=ActorCritic, ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
+    valor_penalized(lambda: gym.make(args.env), actor_critic=ActorCritic,
+                    ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
           disc=ValorDiscriminator, dc_kwargs=dict(hidden_dims=[args.hid]*args.l),
                     # dc_kwargs=dict(hidden_dims=[args.hid]),
           gamma=args.gamma, seed=args.seed, episodes_per_epoch=args.episodes_per_epoch, epochs=args.epochs,
