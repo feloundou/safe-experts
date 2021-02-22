@@ -75,9 +75,15 @@ logger_kwargs = setup_logger_kwargs('pure-valor-expts', 0)
 pure_valor(lambda: gym.make(ENV_NAME),
            disc=ValorDiscriminator,
            dc_kwargs=dict(hidden_dims=[128] * 4),
-           seed=0, episodes_per_epoch=8, epochs=100,
-           logger_kwargs=logger_kwargs,
+           seed=0,
+           episodes_per_epoch=20,
+           max_ep_len=1000,
+           # epochs=100,
+           epochs=10,
+           logger_kwargs=logger_kwargs, splitN=999,
            replay_buffers=[cyan_rb, marigold_rb, rose_rb])
+
+# if you want step-wise differences, make sure splitN is max_ep_len-1
 
 
 

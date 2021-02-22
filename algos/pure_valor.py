@@ -14,6 +14,7 @@ from torch.distributions.categorical import Categorical
 from neural_nets import ActorCritic, ValorDiscriminator
 
 import wandb
+import wandb.plot as wplot
 
 from utils import PureVALORBuffer
 from utils import mpi_fork, proc_id, num_procs, EpochLogger,\
@@ -28,12 +29,15 @@ def pure_valor(env_fn,
           train_dc_interv=1,
           max_ep_len=20, logger_kwargs=dict(),
           config_name='standard',
+          splitN = 8,
           save_freq=10, replay_buffers=[]):
     # W&B Logging
     wandb.login()
 
-    composite_name = 'new_valor_penalized_' + config_name
+    composite_name = 'new_valor_' + config_name
     wandb.init(project="LearningCurves", group="Pure VALOR Expert", name=composite_name)
+
+    assert replay_buffers != [] , "Replay buffers must be set"
 
     # Special function to avoid certain slowdowns from PyTorch + MPI combo.
     setup_pytorch_for_mpi()
@@ -63,7 +67,7 @@ def pure_valor(env_fn,
 
     # Buffer
     local_episodes_per_epoch = int(episodes_per_epoch / num_procs())
-    buffer = PureVALORBuffer(con_dim, obs_dim[0], act_dim[0], local_episodes_per_epoch, max_ep_len, train_dc_interv)
+    buffer = PureVALORBuffer(con_dim, obs_dim[0], act_dim[0], local_episodes_per_epoch, max_ep_len, train_dc_interv, N=splitN)
 
     # Count variables
     var_counts = tuple(count_vars(module) for module in [discrim.pi])
@@ -83,6 +87,10 @@ def pure_valor(env_fn,
         _, logp_dc, _ = discrim(s_diff, con)
         d_l_old = -logp_dc.mean()
 
+        discriminator_metrics = {'discriminator loss': d_l_old}
+
+        wandb.log(discriminator_metrics)
+
         # Discriminator train
         for _ in range(train_dc_iters):
             _, logp_dc, _ = discrim(s_diff, con)
@@ -97,28 +105,16 @@ def pure_valor(env_fn,
         print("LABELS: ", label)
         print("GROUND TRUTH: ", gt)
 
-        # Confusion matrix
-        class_names = ["cyan", "marigold", "rose"]
-
-        # wandb.log({"conf_mat": wandb.plot.confusion_matrix(probs=None,
-        # y_true = gt,
-        # preds = label,
-        # class_names = class_names)})
-
         dc_l_new = -loggt_dc.mean()
 
         logger.store(LossDC=d_l_old,
                      DeltaLossDC=(dc_l_new - d_l_old))
 
     start_time = time.time()
-
     context_dist = Categorical(logits=torch.Tensor(np.ones(con_dim)))
-    print("context distribution:", context_dist)
-    total_t = 0
-    ep_len = 0
+    total_t, ep_len = 0, 0
 
     for epoch in range(epochs):
-         # ac.eval()
          discrim.eval()
          print("local episodes:", local_episodes_per_epoch)
          for ep in range(local_episodes_per_epoch):
@@ -144,10 +140,8 @@ def pure_valor(env_fn,
 
                    ep_len += 1
                    buffer.store(c, concat_obs.squeeze(), a)
-                        # look at the bug, should take the second output instead of log_p ///
-                        # instead of doing average over sequence dimension, do not need to average reward,
-                        # just give reward now
-                        # with pure VAE, do not have to calculate advantages
+                    # instead of doing average over sequence dimension, do not need to average reward,
+                    # just give reward now
                    terminal = (ep_len == max_ep_len)
                    if terminal:
                        dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
@@ -169,11 +163,59 @@ def pure_valor(env_fn,
          # Log
          logger.log_tabular('Epoch', epoch)
          # logger.log_tabular('EpLen', average_only=True)
-         # logger.log_tabular('VVals', with_min_and_max=True)
          logger.log_tabular('LossDC', average_only=True)
          logger.log_tabular('DeltaLossDC', average_only=True)
          logger.log_tabular('Time', time.time() - start_time)
          logger.dump_tabular()
+
+
+    # After training, evaluate the final discriminator
+
+    # Run eval
+    print("RUNNING FINAL EVAL")
+
+    ground_truth = []
+    predictions = []
+    ep_len = 0
+
+    for _ in range(50):
+        discrim.eval()
+        for ep in range(local_episodes_per_epoch):
+            t = random.randrange(0, len(replay_buffers))  # want to randomize draws for now
+            c = torch.tensor(t)
+            print("context sample: ", c)
+            c_onehot = F.one_hot(c, con_dim).squeeze().float()
+
+            for _ in range(max_ep_len):
+
+                sample_rb = replay_buffers[t].sample(1)
+                o = sample_rb['obs']
+                a = sample_rb['act']
+
+                concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
+
+                ep_len += 1
+                buffer.store(c, concat_obs.squeeze(), a)
+                terminal = (ep_len == max_ep_len)
+                if terminal:
+                    dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
+                    con = torch.Tensor([float(c)]).unsqueeze(0)
+                    label, loggt_dc, logp_dc, gt = discrim(dc_diff, con, classes=True)
+
+                    ground_truth.append(int(gt[0][0]))
+                    predictions.append(int(label[0]))
+
+                    buffer.finish_path(loggt_dc.detach().numpy())
+                    ep_len = 0
+
+        # Update
+        discrim.train()
+        obs, act = [torch.Tensor(x) for x in buffer.retrieve_all()]
+
+    # Confusion matrix
+    class_names = ["cyan", "marigold", "rose"]
+    wandb.log({"confusion_mat": wplot.confusion_matrix(
+         y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
 
     wandb.finish()
 

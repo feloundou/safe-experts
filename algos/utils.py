@@ -1421,7 +1421,7 @@ class PureVALORBuffer(object):
         self.eps = 0
         self.dc_eps = 0
 
-        self.N = 11
+        self.N = N
 
         self.con = np.zeros(self.max_batch * self.dc_interv)
         self.dcbuf = np.zeros((self.max_batch * self.dc_interv, self.N-1, obs_dim))
@@ -1449,11 +1449,16 @@ class PureVALORBuffer(object):
 
             prev = int(i*ep_l/(self.N-1))
             succ = int((i+1)*ep_l/(self.N-1))
+            print("Ep L", ep_l)
+            # print("PTR ", self.ptr)
+            # print("start", start)
             # print("prev:", prev)
             # print("succ:", succ)
-            # print("obs", self.obs)
-            # print("start:", self.obs[start + succ][:self.obs_dim])
-            # print("end:", self.obs[start + prev][:self.obs_dim])
+            # print("first end ", start+succ)
+            # print("last end", start+prev)
+
+            print("start:", self.obs[start + succ][:self.obs_dim])
+            print("end:", self.obs[start + prev][:self.obs_dim])
 
             self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
 
@@ -1462,8 +1467,8 @@ class PureVALORBuffer(object):
     def finish_path(self, pret_pos, last_val=0):
         # pret_pos gives the log possibility of cheating the discriminator
         ep_slice = slice(int(self.end[self.eps]), self.ptr)
-        rewards = np.append(self.rew[ep_slice], last_val)
-        values = np.append(self.val[ep_slice], last_val)
+        # rewards = np.append(self.rew[ep_slice], last_val)
+        # values = np.append(self.val[ep_slice], last_val)
 
         self.pos[ep_slice] = pret_pos
 
@@ -1472,6 +1477,8 @@ class PureVALORBuffer(object):
         self.end[self.eps] = self.ptr
 
     def retrieve_all(self):
+        # print("eps", self.eps)
+        # print("max batch", self.max_batch)
         assert self.eps == self.max_batch
         occup_slice = slice(0, self.ptr)
         self.ptr = 0
