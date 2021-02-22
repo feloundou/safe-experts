@@ -1449,7 +1449,7 @@ class PureVALORBuffer(object):
 
             prev = int(i*ep_l/(self.N-1))
             succ = int((i+1)*ep_l/(self.N-1))
-            print("Ep L", ep_l)
+            # print("Ep L", ep_l)
             # print("PTR ", self.ptr)
             # print("start", start)
             # print("prev:", prev)
@@ -1457,8 +1457,8 @@ class PureVALORBuffer(object):
             # print("first end ", start+succ)
             # print("last end", start+prev)
 
-            print("start:", self.obs[start + succ][:self.obs_dim])
-            print("end:", self.obs[start + prev][:self.obs_dim])
+            # print("start:", self.obs[start + succ][:self.obs_dim])
+            # print("end:", self.obs[start + prev][:self.obs_dim])
 
             self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
 

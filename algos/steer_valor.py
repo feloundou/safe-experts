@@ -6,6 +6,7 @@ import gym
 import safety_gym
 import time
 import os.path as osp
+import random
 
 from torch.distributions.categorical import Categorical
 
@@ -161,7 +162,6 @@ def steer_valor(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
         # Log the changes
         print("logging changes")
         _, logp, _, v = ac(obs, act)
-        # _, logp, _ = ac.pi(obs, act)
         pi_l_new = -(logp * (k * adv + pos)).mean()
         v_l_new = F.mse_loss(v, ret)
         kl = (logp_old - logp).mean()
@@ -195,25 +195,28 @@ def steer_valor(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
         ac.eval()
         discrim.eval()
         for _ in range(local_episodes_per_epoch):
-            c = context_dist.sample()
-            print("context sample: ", c)
-            c_onehot = F.one_hot(c, con_dim).squeeze().float()
+            # c = context_dist.sample()
+            # print("context sample: ", c)
+            # c_onehot = F.one_hot(c, con_dim).squeeze().float()
             # print("one hot sample: ", c_onehot)
 
+            t = random.randrange(0, len(replay_buffers))  # want to randomize draws for now
+            c = torch.tensor(t)
+            print("context sample: ", c)
+            c_onehot = F.one_hot(c, con_dim).squeeze().float()
+
             for _ in range(max_ep_len):
+
                 concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
 
                 a, _, logp_t, v_t = ac(concat_obs)
 
                 o, r, d, info = env.step(a.detach().numpy()[0])
-                # print("info", info)
-                # time.sleep(0.002)
                 cost = info.get("cost")
                 if cost is None:
                     print("Hey! Cost NoneType Error: ", info)
                     print(info)
                     print("What was the reward? :", r)
-                    # print("What was the action? :", a.detach())
 
                 ep_cost += cost
                 ep_ret += r
@@ -237,15 +240,13 @@ def steer_valor(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
                 if terminal:
                     dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
                     con = torch.Tensor([float(c)]).unsqueeze(0)
-                    # _, _, log_p = discrim(dc_diff, con)
                     print("context going into discrim:", con)
-                    _, log_p, _ = discrim(dc_diff, con)
-                    # look at the bug, should take the second output instead of log_p ///
+                    _, loggt, _ = discrim(dc_diff, con)
                     # instead of doing average over sequence dimension, do not need to average reward,
                     # just give reward now
                     # with pure VAE, do not have to calculate advantages
 
-                    buffer.finish_path(log_p.detach().numpy())
+                    buffer.finish_path(loggt.detach().numpy())
                     logger.store(EpRet=ep_ret, EpCost=ep_cost, EpLen=ep_len)
 
                     episode_metrics = {'average ep ret': ep_ret, 'average ep cost': ep_cost}

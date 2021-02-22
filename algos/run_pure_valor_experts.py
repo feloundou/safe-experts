@@ -67,6 +67,7 @@ next_states = sample_rose['next_obs']
 
 # Run Pure VALOR
 from pure_valor import pure_valor
+from steer_valor import steer_valor
 from neural_nets import ValorDiscriminator
 from utils import setup_logger_kwargs
 
@@ -76,15 +77,25 @@ pure_valor(lambda: gym.make(ENV_NAME),
            disc=ValorDiscriminator,
            dc_kwargs=dict(hidden_dims=[128] * 4),
            seed=0,
-           episodes_per_epoch=20,
+           episodes_per_epoch=10,
            max_ep_len=1000,
            # epochs=100,
            epochs=10,
-           logger_kwargs=logger_kwargs, splitN=999,
+           logger_kwargs=logger_kwargs, splitN=99,
            replay_buffers=[cyan_rb, marigold_rb, rose_rb])
 
 # if you want step-wise differences, make sure splitN is max_ep_len-1
 
+# steer_valor(lambda: gym.make(ENV_NAME),
+#            disc=ValorDiscriminator,
+#            dc_kwargs=dict(hidden_dims=[128] * 4),
+#            seed=0,
+#            episodes_per_epoch=20,
+#            max_ep_len=1000,
+#            # epochs=100,
+#            epochs=10,
+#            logger_kwargs=logger_kwargs, splitN=999,
+#            replay_buffers=[cyan_rb, marigold_rb, rose_rb])
 
 
 
