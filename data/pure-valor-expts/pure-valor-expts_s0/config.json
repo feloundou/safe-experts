@@ -1,4 +1,12 @@
 {
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
     "composite_name":	"new_valor_standard",
     "config_name":	"standard",
     "dc_kwargs":	{
@@ -11,12 +19,13 @@
     },
     "dc_lr":	0.0005,
     "disc":	"ValorDiscriminator",
-    "env_fn":	"<function <lambda> at 0x7f0151a75e50>",
+    "env_fn":	"<function <lambda> at 0x7fa8e6cc31f0>",
     "episodes_per_epoch":	10,
-    "epochs":	10,
+    "epochs":	20,
     "exp_name":	"pure-valor-expts",
+    "label_disc":	"GaussianReward",
     "logger":	{
-        "<utils.EpochLogger object at 0x7f016e1d9e50>":	{
+        "<utils.EpochLogger object at 0x7fa8e6cce640>":	{
             "epoch_dict":	{},
             "exp_name":	"pure-valor-expts",
             "first_row":	true,
@@ -36,13 +45,13 @@
     },
     "max_ep_len":	1000,
     "replay_buffers":	[
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f016e1e1e00>",
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f0151a7f460>",
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f0151a7f9e0>"
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7fa8e6cc5670>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7fa8e6cc5ca0>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7fa8e6ccb250>"
     ],
     "save_freq":	10,
     "seed":	0,
-    "splitN":	99,
+    "splitN":	999,
     "train_dc_interv":	1,
     "train_dc_iters":	10
 }

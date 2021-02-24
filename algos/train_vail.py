@@ -9,7 +9,8 @@ import safety_gym
 # from safety_gym.envs.engine import Engine
 
 from utils import *
-from ppo_algos import *
+# from ppo_algos import *
+from neural_nets import VDB, MLPDiscriminator
 from agent_types import *
 import pickle
 
@@ -18,11 +19,11 @@ import wandb
 import numpy as np
 
 from utils import *
-
 # Define PPO functions
 def vail(env_fn,
         actor_critic=MLPActorCritic,
-        discrim = Discriminator,
+        # discrim = MLPDiscriminator,
+        discrim = VDB,
         agent=PPOAgent(),
         ac_kwargs=dict(),
         seed=0,
@@ -129,7 +130,7 @@ def vail(env_fn,
 
 
     # Paths
-    _project_dir = '/home/tyna/Documents/openai/research-project/'
+    _project_dir = '/home/tyna/Documents/safe-experts/'
     _root_data_path = _project_dir + 'data/'
     _expert_path = _project_dir + 'expert_data/'
     _clone_path = _project_dir + 'clone_data/'
@@ -246,8 +247,13 @@ def vail(env_fn,
         demonstrations = torch.Tensor(demonstrations)
 
         # Pass both expert and learner through discriminator
-        learner = discrim(torch.cat([obs, act], dim=1))
-        expert = discrim(demonstrations)
+        if discrim == MLPDiscriminator:
+            learner = discrim(torch.cat([obs, act], dim=1))
+            expert = discrim(demonstrations)
+        else:
+            print("VDB hurray!")
+            learner, l_mu, l_var  = discrim(torch.cat([obs, act], dim=1))
+            expert, e_mu, e_var = discrim(demonstrations)
 
         learner_acc = (learner  > 0.5).float().mean()
         expert_acc = (expert < 0.5).float().mean()
@@ -587,11 +593,12 @@ def main(config):
     wandb.config.update(args)
     wandb.finish()
 
+
 if __name__ == '__main__':
 
     exec(open('nn_config.py').read())
 
-    main(standard_config)
+    main(sage_config)
 
 
 # keep cost limits below 60-80

@@ -8,6 +8,8 @@ import torch.nn.functional as F
 
 import torch
 import torch.nn as nn
+from torch.distributions import Independent
+
 from torch.distributions.normal import Normal
 from torch.distributions.categorical import Categorical
 
@@ -205,18 +207,27 @@ class DistilledGaussianActor(nn.Module):
 
         return Normal(loc=mu, scale=std).rsample()
 
-class MLPDiscriminator(nn.Module):
-    def __init__(self, obs_space, act_space, hidden_sizes, activation=nn.Tanh):
+
+class GaussianReward(nn.Module):
+    def __init__(self, obs_dim, hidden_sizes, activation):
         super().__init__()
-        obs_dim = obs_space.shape[0]
-        act_dim = act_space.shape[0]
-        discrim_dim = obs_dim + act_dim
-        self.discrim_net = mlp([discrim_dim] + list(hidden_sizes) + [1], activation)
 
+        self.shared_net = mlp([obs_dim] + list(hidden_sizes), activation)
 
-    def forward(self, obs):
-        prob = torch.sigmoid(self.discrim_net(obs))
-        return prob
+        self.mu_net = nn.Linear(hidden_sizes[-1], 1)
+        self.var_net = nn.Linear(hidden_sizes[-1], 1)
+
+    def forward(self, x):
+
+        out = F.leaky_relu(self.shared_net(x))
+        mu = self.mu_net(out)
+        std = self.var_net(out)
+
+        # print("mu", mu)
+        # print("std", std)
+
+        return Normal(loc=mu, scale=std).rsample()
+
 
 
 class BiclassificationPolicy(nn.Module):
@@ -249,10 +260,70 @@ class Discriminator(nn.Module):
         return label, loggt, logp
 
 
+class MLPDiscriminator(nn.Module):
+    def __init__(self, obs_space, act_space, hidden_sizes, activation=nn.Tanh):
+        super().__init__()
+        obs_dim = obs_space.shape[0]
+        act_dim = act_space.shape[0]
+        discrim_dim = obs_dim + act_dim
+        self.discrim_net = mlp([discrim_dim] + list(hidden_sizes) + [1], activation)
+
+
+    def forward(self, obs):
+        prob = torch.sigmoid(self.discrim_net(obs))
+        return prob
+
+
+class Reward_VDB(nn.Module):
+    # def __init__(self, num_inputs, args):
+    def __init__(self, obs_space, act_space, hidden_sizes, activation=nn.Tanh):
+        super().__init__()
+        obs_dim = obs_space.shape[0]
+        act_dim = act_space.shape[0]
+        discrim_dim = obs_dim + act_dim
+
+        # self.mu_net = mlp([discrim_dim] + list(hidden_sizes) + [1], activation)
+
+        z_size = 128
+
+        self.shared_net = mlp([discrim_dim] + list(hidden_sizes), activation)
+        self.mu_net = nn.Linear(hidden_sizes[-1], z_size)
+        self.var_net = nn.Linear(hidden_sizes[-1], z_size)
+
+        # self.fc1 = nn.Linear(num_inputs, args.hidden_size)
+        # self.fc1 = nn.Linear(discrim_dim, hidden_sizes[0])
+        # self.fc2 = nn.Linear(hidden_sizes[0], z_size)
+        # self.fc3 = nn.Linear(hidden_sizes[0], z_size)
+        self.fc4 = nn.Linear(z_size, hidden_sizes[0])
+        self.fc5 = nn.Linear(hidden_sizes[0], 1)
+
+        self.fc5.weight.data.mul_(0.1)
+        self.fc5.bias.data.mul_(0.0)
+
+    def encoder(self, x):
+        h = torch.tanh(self.shared_net(x))
+        return self.mu_net(h), self.var_net(h)
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(logvar / 2)
+        eps = torch.randn_like(std)
+        return mu + std * eps
+
+    def discriminator(self, z):
+        h = torch.tanh(self.fc4(z))
+        return torch.sigmoid(self.fc5(h))
+
+    def forward(self, x):
+        mu, logvar = self.encoder(x)
+        z = self.reparameterize(mu, logvar)
+        prob = self.discriminator(z)
+        return prob, mu, logvar
+
+
 class VDB(nn.Module):
     # def __init__(self, num_inputs, args):
     def __init__(self, obs_space, act_space, hidden_sizes, activation=nn.Tanh):
-        super(VDB, self).__init__()
+        super().__init__()
         obs_dim = obs_space.shape[0]
         act_dim = act_space.shape[0]
         discrim_dim = obs_dim + act_dim
@@ -313,52 +384,6 @@ class MLP(nn.Module):
 
 
 
-# class CategoricalPolicy(nn.Module):
-#     def __init__(self, input_dim, hidden_dims, activation, output_activation, action_dim):
-#         super(CategoricalPolicy, self).__init__()
-#
-#         print("Categorical policy used.")
-#         self.logits = MLP(layers=[input_dim] + list(hidden_dims) + [action_dim], activation=activation)
-#
-#     def forward(self, x, a=None):
-#         logits = self.logits(x)
-#         policy = Categorical(logits=logits)
-#         pi = policy.sample()
-#         logp_pi = policy.log_prob(pi).squeeze()
-#         if a is not None:
-#             logp = policy.log_prob(a).squeeze()
-#         else:
-#             logp = None
-#
-#         return pi, logp, logp_pi
-
-
-
-# class BLSTMPolicy(nn.Module):
-#     def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
-#         super(BLSTMPolicy, self).__init__()
-#         self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dims//2, batch_first=True, bidirectional=True)
-#         self.linear = nn.Linear(hidden_dims, con_dim)
-#         nn.init.zeros_(self.linear.bias)
-#
-#     def forward(self, seq, gt=None):
-#         inter_states, _ = self.lstm(seq)
-#         print("inter states: ", inter_states)
-#         logit_seq = self.linear(inter_states)
-#         print("LOGIT SEQ")
-#         print(logit_seq)
-#         self.logits = torch.mean(logit_seq, dim=1)
-#         policy = Categorical(logits=self.logits)
-#         label = policy.sample()
-#         logp = policy.log_prob(label).squeeze()
-#         if gt is not None:
-#             loggt = policy.log_prob(gt).squeeze()
-#         else:
-#             loggt = None
-#
-#         return label, loggt, logp
-
-
 class ValorFFNNPolicy(nn.Module):
     def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
         super(ValorFFNNPolicy, self).__init__()
@@ -376,9 +401,6 @@ class ValorFFNNPolicy(nn.Module):
         logp = policy.log_prob(label).squeeze()
 
         if gt is not None:
-            # print('GROUND TRUTH: ', gt)
-            # ground_truth_ids = gt.argmax(axis=1)
-            # print("ground truth ids", ground_truth_ids)
             loggt = policy.log_prob(gt).squeeze()
         else:
             loggt = None
@@ -396,8 +418,6 @@ class ValorDiscriminator(nn.Module):
         super(ValorDiscriminator, self).__init__()
         self.context_dim = context_dim
 
-        # self.pi = BLSTMPolicy(input_dim, hidden_dims, activation=torch.softmax,
-        # output_activation=torch.softmax, con_dim=self.context_dim)
         self.pi = ValorFFNNPolicy(input_dim, hidden_dims, activation=nn.Tanh,
                                   output_activation=nn.Tanh, con_dim=self.context_dim)
 
@@ -411,4 +431,97 @@ class ValorDiscriminator(nn.Module):
             return pred, loggt, logp, gt
 
 
+
+class DiagGaussianLayer(nn.Module):
+    '''
+    Implements a layer that outputs a Gaussian distribution with a diagonal
+    covariance matrix
+    Attributes
+    ----------
+    log_std : torch.FloatTensor
+        the log square root of the diagonal elements of the covariance matrix
+    Methods
+    -------
+    __call__(mean)
+        takes as input a mean vector and outputs a Gaussian distribution with
+        diagonal covariance matrix defined by log_std
+    '''
+
+    def __init__(self, output_dim=None, log_std=None):
+        nn.Module.__init__(self)
+
+        self.log_std = log_std
+
+        if log_std is None:
+            self.log_std = Parameter(torch.zeros(output_dim), requires_grad=True)
+
+    def __call__(self, mean):
+        std = torch.exp(self.log_std)
+        normal_dist = Independent(Normal(loc=mean, scale=std), 1)
+
+        return normal_dist
+
+
+def build_layers(input_dim, hidden_dims, output_dim,
+                 activation=nn.Tanh, output_activation=nn.Identity):
+    '''
+    Returns a list of Linear and Tanh layers with the specified layer sizes
+    Parameters
+    ----------
+    input_dim : int
+        the input dimension of the first linear layer
+    hidden_dims : list
+        a list of type int specifying the sizes of the hidden layers
+    output_dim : int
+        the output dimension of the final layer in the list
+    Returns
+    -------
+    layers : list
+        a list of Linear layers, each one followed by a Tanh layer, excluding the
+        final layer
+    '''
+
+    layer_sizes = [input_dim] + hidden_dims + [output_dim]
+    layers = []
+
+    for i in range(len(layer_sizes) - 1):
+        act = activation if i < len(layer_sizes) - 2 else output_activation # Tyna note
+        layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1], bias=True))
+
+        if i != len(layer_sizes) - 2:
+            layers.append(nn.Tanh())
+
+    return layers
+
+
+
+def MLP_DiagGaussianPolicy(state_dim, hidden_dims, action_dim,
+                           log_std=None):
+    '''
+    Build a multilayer perceptron with a DiagGaussianLayer at the output layer
+    Parameters
+    ----------
+    state_dim : int
+        the input size of the network
+    hidden_dims : list
+        a list of type int specifying the sizes of the hidden layers
+    action_dim : int
+        the dimensionality of the Gaussian distribution to be outputted by the
+        policy
+    log_std : torch.FloatTensor
+        the log square root of the diagonal elements of the covariance matrix
+        (will be set to a vector of zeros if none is specified)
+    Returns
+    -------
+    policy : torch.nn.Sequential
+        a pytorch sequential model that outputs a Gaussian distribution
+    '''
+
+    layers = build_layers(state_dim, hidden_dims, action_dim)
+    layers[-1].weight.data *= 0.1
+    layers[-1].bias.data *= 0.0
+    layers.append(DiagGaussianLayer(action_dim, log_std))
+    policy = nn.Sequential(*layers)
+
+    return policy
 

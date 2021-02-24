@@ -72,13 +72,13 @@ class CPO:
         self.mean_costs = []
 
         if not model_name and continue_from_file:
-            raise Exception('Argument continue_from_file to __init__ method of ' \
-                            'CPO case was set to True but model_name was not ' \
+            raise Exception('Argument continue_from_file to __init__ method of '
+                            'CPO case was set to True but model_name was not '
                             'specified.')
 
         if not model_name and save_every:
-            raise Exception('Argument save_every to __init__ method of CPO ' \
-                            'was set to a value greater than 0 but model_name ' \
+            raise Exception('Argument save_every to __init__ method of CPO '
+                            'was set to a value greater than 0 but model_name '
                             'was not specified.')
 
         if continue_from_file:

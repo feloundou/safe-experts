@@ -1,4 +1,4 @@
-from behavioral_cloning.clone_utils import *
+from clone_utils import *
 from adabelief_pytorch import AdaBelief
 
 import gym

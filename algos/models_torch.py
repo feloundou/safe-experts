@@ -90,39 +90,33 @@ def build_layers(input_dim, hidden_dims, output_dim,
 
     return layers
 
+#
+# def MLP(input_dim, hidden_dims, output_dim):
+#     '''
+#     Build a multilayer perceptron with tanh activations with the specified input,
+#     output, and hidden layer sizes
+#     Parameters
+#     ----------
+#     input_dim : int
+#         the input dimension of the first linear layer
+#     hidden_dims : list
+#         a list of type int specifying the sizes of the hidden layers
+#     output_dim : int
+#         the output dimension of the final layer in the list
+#     Returns
+#     -------
+#     mlp : torch.nn.Sequential
+#         a pytorch sequential model that defines a MLP
+#     '''
+#
+#     return Sequential(*build_layers(input_dim, hidden_dims, output_dim))
 
- # layers = []
- #    for j in range(len(layer_sizes) - 1):
- #        act = activation if j < len(sizes) - 2 else output_activation
- #        layers += [nn.Linear(sizes[j], sizes[j + 1]), act()]
- #    return nn.Sequential(*layers)
-
-def MLP(input_dim, hidden_dims, output_dim):
-    '''
-    Build a multilayer perceptron with tanh activations with the specified input,
-    output, and hidden layer sizes
-    Parameters
-    ----------
-    input_dim : int
-        the input dimension of the first linear layer
-    hidden_dims : list
-        a list of type int specifying the sizes of the hidden layers
-    output_dim : int
-        the output dimension of the final layer in the list
-    Returns
-    -------
-    mlp : torch.nn.Sequential
-        a pytorch sequential model that defines a MLP
-    '''
-
-    return Sequential(*build_layers(input_dim, hidden_dims, output_dim))
-
-def mlp(sizes, activation, output_activation=Identity):
-    layers = []
-    for j in range(len(sizes) - 1):
-        act = activation if j < len(sizes) - 2 else output_activation
-        layers += [Linear(sizes[j], sizes[j + 1]), act()]
-    return Sequential(*layers)
+# def mlp(sizes, activation, output_activation=Identity):
+#     layers = []
+#     for j in range(len(sizes) - 1):
+#         act = activation if j < len(sizes) - 2 else output_activation
+#         layers += [Linear(sizes[j], sizes[j + 1]), act()]
+#     return Sequential(*layers)
 
 
 def MLP_DiagGaussianPolicy(state_dim, hidden_dims, action_dim,

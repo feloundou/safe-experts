@@ -1408,6 +1408,7 @@ class PureVALORBuffer(object):
         self.max_s = batch_size * ep_len
         self.obs_dim = obs_dim
         self.obs = np.zeros((self.max_s, obs_dim + con_dim))
+        # self.simple_obs = np.zeros((self.max_s, obs_dim))
         self.act = np.zeros((self.max_s, act_dim))
         self.rew = np.zeros(self.max_s)
         # self.cost = np.zeros(self.max_s)
@@ -1429,12 +1430,15 @@ class PureVALORBuffer(object):
         self.gamma = gamma
         self.lam = lam
 
-    def store(self, con, obs, act):
+    def store(self, con, obs, act, rew):
 
         assert self.ptr < self.max_s
         self.obs[self.ptr] = obs
+        # self.simple_obs[self.ptr] = simple_obs
+
         self.act[self.ptr] = act
         self.con[self.eps] = con
+        self.rew[self.ptr] = rew
 
         self.ptr += 1
 
@@ -1484,7 +1488,7 @@ class PureVALORBuffer(object):
         self.ptr = 0
         self.eps = 0
 
-        return [self.obs[occup_slice], self.act[occup_slice],
+        return [self.obs[occup_slice], self.act[occup_slice], self.rew[occup_slice]
                 ]
 
     def retrieve_dc_buff(self):
@@ -1507,3 +1511,15 @@ class PureVALORBuffer(object):
 #     loss_pi = -(torch.min(ratio * adv, clip_adv)).mean()
 
     # return loss_pi
+
+
+
+# from sklearn.cluster import AgglomerativeClustering
+# import numpy as np
+# X = np.array([[1, 2], [1, 4], [1, 0],
+#                [4, 2], [4, 4], [4, 0]])
+# clustering = AgglomerativeClustering().fit(X)
+# print(clustering)
+# AgglomerativeClustering()
+# print(clustering.labels_)
+# array([1, 1, 1, 0, 0, 0])

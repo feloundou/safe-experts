@@ -9,7 +9,12 @@ import torch
 import os
 import time
 
-from ppo_algos import MLPActorCritic
+from neural_nets import MLP_DiagGaussianPolicy, MLPActorCritic
+from torch.optim import Adam
+
+from torch_cpo_utils import ExpertSinglePathSimulator
+
+# from ppo_algos import MLPActorCritic
 
 from utils import setup_logger_kwargs, setup_pytorch_for_mpi, \
     mpi_avg, mpi_avg_grads, mpi_sum, num_procs, \
@@ -17,7 +22,7 @@ from utils import setup_logger_kwargs, setup_pytorch_for_mpi, \
 
 from run_policy_sim_ppo import load_policy_and_env, run_policy
 
-from torch.optim import Adam
+
 
 
 # Set up function for computing PPO policy loss
@@ -342,9 +347,22 @@ class Expert(Agent):
         obs_dim = env.observation_space.shape
         act_dim = env.action_space.shape
 
+        print("Now adding trajectories to memory")
+
+        # policy_dims = [64, 64]
+
+        # Gaussian policy
+        # policy = MLP_DiagGaussianPolicy(obs_dim[0], policy_dims, act_dim[0])
+
+
+
         if get_from_file:
             print(colorize("Pulling saved expert %s trajectories from file over %d episodes" %
                            (self.config_name, expert_episodes), 'blue', bold=True))
+
+            n_trajectories = 2
+            print("N trajectories: ", n_trajectories)
+            trajectory_len = 1000
 
             f = open(self._demo_dir + 'sim_data_' + str(expert_episodes) + '_buffer.pkl', "rb")
             buffer_file = pickle.load(f)
@@ -373,6 +391,17 @@ class Expert(Agent):
                                            done=np_next_dones[~np_dones]))
             self.replay_buffer = replay_buffer
 
+            # f = open(self._demo_dir + 'sim_data_' + str(expert_episodes) + '_buffer.pkl', "rb")
+            m_file = self._expert_path + self.config_name + '_episodes/memory_data_' + str(
+                int(n_trajectories)) + '_buffer.pkl'
+
+            file_m = open(m_file, 'rb')
+            memory = pickle.load(file_m)
+            self.memory = memory
+            file_m.close()
+
+
+
         else:
             # Generate expert data
             print(colorize(
@@ -381,10 +410,10 @@ class Expert(Agent):
                 'blue', bold=True))
 
             # Load trained policy
-            _, get_action = load_policy_and_env(osp.join(self._root_data_path, self.file_name, self.file_name + '_s0/'),
+            _, expert_pi = load_policy_and_env(osp.join(self._root_data_path, self.file_name, self.file_name + '_s0/'),
                                                 'last', False)
             expert_rb = run_policy(env,
-                                   get_action,
+                                   expert_pi,
                                    0,
                                    expert_episodes,
                                    False,
@@ -397,235 +426,25 @@ class Expert(Agent):
 
             self.replay_buffer = expert_rb
 
-        #
-        # print(colorize("Running simulations of trained %s expert on %s environment over %d episodes" % (
-        # self.config_name, env, num_episodes),
-        #                'red', bold=True))
-        #
-        # # Load trained policy
-        # _, expert_pi = load_policy_and_env(osp.join(self._root_data_path, self.file_name, self.file_name + '_s0/'),
-        #                                    'last', False)
-        #
-        # assert env is not None, \
-        #     "Environment not found!\n\n It looks like the environment wasn't saved, " + \
-        #     "and we can't run the agent in it. :( \n\n Check out the readthedocs " + \
-        #     "page on Experiment Outputs for how to handle this situation."
-        #
-        # logger = EpochLogger()
-        # o, r, d, ep_ret, ep_len, n = env.reset(), 0, False, 0, 0, 0
-        # ep_cost = 0
-        # local_steps_per_epoch = int(4000 / num_procs())
-        #
-        # obs_dim = env.observation_space.shape
-        # act_dim = env.action_space.shape
-        #
-        # rew_mov_avg_10 = []
-        # cost_mov_avg_10 = []
-        #
-        # if benchmark:
-        #     ep_costs = []
-        #     ep_rewards = []
-        #
-        # if record:
-        #     wandb.login()
-        #     # 4 million env interactions
-        #     wandb.init(project=record_project, name=record_name)
-        #
-        #     # buf = CostPOBuffer(obs_dim, act_dim, local_steps_per_epoch, 0.99, 0.99)
-        #
-        #     rb = ReplayBuffer(size=10000,
-        #                       env_dict={
-        #                           "obs": {"shape": obs_dim},
-        #                           "act": {"shape": act_dim},
-        #                           "rew": {},
-        #                           "next_obs": {"shape": obs_dim},
-        #                           "done": {}})
-        #
-        #
-        # while n < num_episodes:
-        #     if render:
-        #         env.render()
-        #         time.sleep(1e-3)
-        #
-        #     # a = get_action(o)
-        #     a = expert_pi(o)
-        #     next_o, r, d, info = env.step(a)
-        #
-        #     if record:
-        #         done_int = int(d == True)
-        #         rb.add(obs=o, act=a, rew=r, next_obs=next_o, done=done_int)
-        #
-        #     ep_ret += r
-        #     ep_len += 1
-        #     ep_cost += info['cost']
-        #
-        #     # Important!
-        #     o = next_o
-        #
-        #     if d or (ep_len == max_ep_len):
-        #         # finish recording and save csv
-        #         if record:
-        #             rb.on_episode_end()
-        #
-        #             # make directory if does not exist
-        #             if not os.path.exists(data_path + config_name + '_episodes'):
-        #                 os.makedirs(data_path + config_name + '_episodes')
-        #
-        #         if len(rew_mov_avg_10) >= 25:
-        #             rew_mov_avg_10.pop(0)
-        #             cost_mov_avg_10.pop(0)
-        #
-        #         rew_mov_avg_10.append(ep_ret)
-        #         cost_mov_avg_10.append(ep_cost)
-        #
-        #         mov_avg_ret = np.mean(rew_mov_avg_10)
-        #         mov_avg_cost = np.mean(cost_mov_avg_10)
-        #
-        #         expert_metrics = {log_prefix + 'episode return': ep_ret,
-        #                           log_prefix + 'episode cost': ep_cost,
-        #                           # 'cumulative return': cum_ret,
-        #                           # 'cumulative cost': cum_cost,
-        #                           log_prefix + '25ep mov avg return': mov_avg_ret,
-        #                           log_prefix + '25ep mov avg cost': mov_avg_cost
-        #                           }
-        #
-        #         if benchmark:
-        #             ep_rewards.append(ep_ret)
-        #             ep_costs.append(ep_cost)
-        #
-        #         wandb.log(expert_metrics)
-        #         logger.store(EpRet=ep_ret, EpLen=ep_len, EpCost=ep_cost)
-        #         print('Episode %d \t EpRet %.3f \t EpLen %d \t EpCost %d' % (n, ep_ret, ep_len, ep_cost))
-        #         o, r, d, ep_ret, ep_len, ep_cost = env.reset(), 0, False, 0, 0, 0
-        #         n += 1
-        #
-        # logger.log_tabular('EpRet', with_min_and_max=True)
-        # logger.log_tabular('EpLen', average_only=True)
-        # logger.dump_tabular()
-        #
-        # if record:
-        #     print("saving final buffer")
-        #     bufname_pk = data_path + config_name + '_episodes/sim_data_' + str(int(num_episodes)) + '_buffer.pkl'
-        #     file_pi = open(bufname_pk, 'wb')
-        #     pickle.dump(rb.get_all_transitions(), file_pi)
-        #     wandb.finish()
-        #
-        #     return rb
-        #
-        # if benchmark:
-        #     return ep_rewards, ep_costs
+            print("Hello, Simulator for !", self.config_name)
 
 
-    #
-    #
-    # def record_replay_buffer(self, env, num_episodes):
-    #
-    #     def run_policy(env, get_action, max_ep_len=None, num_episodes=100, render=True, record=False,
-    #                    record_project='benchmarking', record_name='trained', data_path='', config_name='test',
-    #                    max_len_rb=100, benchmark=False, log_prefix=''):
-    #         assert env is not None, \
-    #             "Environment not found!\n\n It looks like the environment wasn't saved, " + \
-    #             "and we can't run the agent in it. :( \n\n Check out the readthedocs " + \
-    #             "page on Experiment Outputs for how to handle this situation."
-    #
-    #         logger = EpochLogger()
-    #         o, r, d, ep_ret, ep_len, n = env.reset(), 0, False, 0, 0, 0
-    #         ep_cost = 0
-    #         local_steps_per_epoch = int(4000 / num_procs())
-    #
-    #         obs_dim = env.observation_space.shape
-    #         act_dim = env.action_space.shape
-    #
-    #         rew_mov_avg_10 = []
-    #         cost_mov_avg_10 = []
-    #
-    #         if benchmark:
-    #             ep_costs = []
-    #             ep_rewards = []
-    #
-    #         # if record:
-    #         wandb.login()
-    #         # 4 million env interactions
-    #         wandb.init(project=record_project, name=record_name)
-    #
-    #         rb = ReplayBuffer(size=10000,
-    #                           env_dict={
-    #                               "obs": {"shape": obs_dim},
-    #                               "act": {"shape": act_dim},
-    #                               "rew": {},
-    #                               "next_obs": {"shape": obs_dim},
-    #                               "done": {}})
-    #
-    #         while n < num_episodes:
-    #             if render:
-    #                 env.render()
-    #                 time.sleep(1e-3)
-    #
-    #             a = get_action(o)
-    #             next_o, r, d, info = env.step(a)
-    #
-    #             if record:
-    #                 done_int = int(d == True)
-    #                 rb.add(obs=o, act=a, rew=r, next_obs=next_o, done=done_int)
-    #
-    #             ep_ret += r
-    #             ep_len += 1
-    #             ep_cost += info['cost']
-    #
-    #             # Important!
-    #             o = next_o
-    #
-    #             if d or (ep_len == max_ep_len):
-    #                 # finish recording and save csv
-    #                 if record:
-    #                     rb.on_episode_end()
-    #
-    #                     # make directory if does not exist
-    #                     if not os.path.exists(data_path + config_name + '_episodes'):
-    #                         os.makedirs(data_path + config_name + '_episodes')
-    #
-    #                 if len(rew_mov_avg_10) >= 25:
-    #                     rew_mov_avg_10.pop(0)
-    #                     cost_mov_avg_10.pop(0)
-    #
-    #                 rew_mov_avg_10.append(ep_ret)
-    #                 cost_mov_avg_10.append(ep_cost)
-    #
-    #                 mov_avg_ret = np.mean(rew_mov_avg_10)
-    #                 mov_avg_cost = np.mean(cost_mov_avg_10)
-    #
-    #                 expert_metrics = {log_prefix + 'episode return': ep_ret,
-    #                                   log_prefix + 'episode cost': ep_cost,
-    #                                   log_prefix + '25ep mov avg return': mov_avg_ret,
-    #                                   log_prefix + '25ep mov avg cost': mov_avg_cost
-    #                                   }
-    #
-    #                 if benchmark:
-    #                     ep_rewards.append(ep_ret)
-    #                     ep_costs.append(ep_cost)
-    #
-    #                 wandb.log(expert_metrics)
-    #                 logger.store(EpRet=ep_ret, EpLen=ep_len, EpCost=ep_cost)
-    #                 print('Episode %d \t EpRet %.3f \t EpLen %d \t EpCost %d' % (n, ep_ret, ep_len, ep_cost))
-    #                 o, r, d, ep_ret, ep_len, ep_cost = env.reset(), 0, False, 0, 0, 0
-    #                 n += 1
-    #
-    #         logger.log_tabular('EpRet', with_min_and_max=True)
-    #         logger.log_tabular('EpLen', average_only=True)
-    #         logger.dump_tabular()
-    #
-    #         # if record:
-    #         bufname_pk = data_path + config_name + '_episodes/sim_data_' + str(int(num_episodes)) + '_buffer.pkl'
-    #         file_pi = open(bufname_pk, 'wb')
-    #         pickle.dump(rb.get_all_transitions(), file_pi)
-    #         wandb.finish()
-    #
-    #         return rb
-    #
-    #         if benchmark:
-    #             return ep_rewards, ep_costs
-    #
-    #
-    #
-    #
+
+            self.simulator = ExpertSinglePathSimulator('Safexp-PointGoal1-v0',
+                                                       expert_pi, n_trajectories, trajectory_len)
+
+            print("running the simulation and saving to 'memory' ")
+            self.memory = self.simulator.run_sim(sampling_mode=False)
+
+            # Save to pickle
+            bufname_pk = self._expert_path + self.config_name + '_episodes/memory_data_' + str(int(n_trajectories)) + '_buffer.pkl'
+            file_pi = open(bufname_pk, 'wb')
+            pickle.dump(self.memory, file_pi)
+
+
+
+
+
+
+
 

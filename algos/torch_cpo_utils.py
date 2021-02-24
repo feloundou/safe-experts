@@ -381,15 +381,15 @@ class RunningStat:
 
 
 
-def make_env(env_name, **env_args):
-    if env_name == 'ant_gather':
-        return PointGather(**env_args)
-    elif env_name == 'point_gather':
-        return PointGatherEnv(**env_args)
-    elif env_name == "Safexp-PointGoal1-v0":
-        return gym.make(env_name)
-    else:
-        raise NotImplementedError
+# def make_env(env_name, **env_args):
+#     if env_name == 'ant_gather':
+#         return PointGather(**env_args)
+#     elif env_name == 'point_gather':
+#         return PointGatherEnv(**env_args)
+#     elif env_name == "Safexp-PointGoal1-v0":
+#         return gym.make(env_name)
+#     else:
+#         raise NotImplementedError
 
 
 class Simulator:
@@ -481,5 +481,78 @@ class SinglePathSimulator:
                 continue_mask = np.asarray([1 - trajectory.done for trajectory in trajectories])
 
         memory = Buffer(trajectories)
+
+        return memory
+
+
+
+class ExpertSinglePathSimulator:
+    def __init__(self, env_name, policy, n_trajectories, trajectory_len,
+                 state_filter=None,
+                 **env_args):
+        Simulator.__init__(self, env_name, policy, n_trajectories, trajectory_len,
+                           state_filter,  **env_args)
+
+    def run_sim(self, sampling_mode=True, render=False):
+        print("policy eval launch")
+        if sampling_mode:
+            self.policy.eval()
+
+        with torch.no_grad():
+            trajectories = np.asarray([Trajectory() for i in range(self.n_trajectories)])
+            continue_mask = np.ones(self.n_trajectories)
+            traj_count = 0
+
+            for env, trajectory in zip(self.env, trajectories):
+                obs = torch.tensor(env.reset()).float()
+
+                # Maybe batch this operation later
+                if self.obs_filter:
+                    obs = self.obs_filter(obs)
+
+                trajectory.observations.append(obs)
+
+            while np.any(continue_mask):
+                continue_indices = np.where(continue_mask)
+                trajs_to_update = trajectories[continue_indices]
+                continuing_envs = self.env[continue_indices]
+
+                policy_input = torch.stack([torch.tensor(trajectory.observations[-1])
+                                            for trajectory in trajs_to_update])
+
+                action_dists = self.policy(policy_input)
+                if sampling_mode:
+                    actions = action_dists.sample()
+                    actions = actions.cpu()
+                else:
+                    actions = torch.Tensor(action_dists)
+                # print("actions sampled: ", actions)
+
+
+                for env, action, trajectory in zip(continuing_envs, actions, trajs_to_update):
+                    traj_count += 1
+
+                    obs, reward, trajectory.done, info = env.step(action.numpy())
+
+                    obs = torch.tensor(obs).float()
+                    reward = torch.tensor(reward, dtype=torch.float)
+                    # cost = torch.tensor(info['constraint_cost'], dtype=torch.float) #Tyna Note
+                    cost = torch.tensor(info['cost_hazards'], dtype=torch.float)
+                    # print("costs: ", cost)
+
+                    if self.obs_filter:
+                        obs = self.obs_filter(obs)
+
+                    trajectory.actions.append(action)
+                    trajectory.rewards.append(reward)
+                    trajectory.costs.append(cost)
+
+                    if not trajectory.done:
+                        trajectory.observations.append(obs)
+
+                continue_mask = np.asarray([1 - trajectory.done for trajectory in trajectories])
+
+        memory = Buffer(trajectories)
+        print("Memory: ", memory)
 
         return memory
