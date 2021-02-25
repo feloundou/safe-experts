@@ -140,10 +140,10 @@ steer_valor(lambda: gym.make(ENV_NAME),
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            # epochs=100,
-           epochs=100,
+           epochs=50,
            logger_kwargs=logger_kwargs, splitN=ep_len_config-1,
-           replay_buffers=[cyan_rb, marigold_rb, rose_rb],
-           memories=[cyan_memory, marigold_memory, rose_memory])
+           replay_buffers=[marigold_rb, rose_rb],
+           memories=[marigold_memory, rose_memory])
 
 
 

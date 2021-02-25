@@ -4,6 +4,8 @@ import gym
 import safety_gym
 import time, random, torch, wandb
 
+import wandb.plot as wplot
+
 import os.path as osp
 from torch import nn
 from torch.optim import Adam
@@ -61,7 +63,11 @@ def steer_valor(env_fn,
     discrim = disc(input_dim=obs_dim[0], context_dim=con_dim, **dc_kwargs)
 
     # con_encoder = con_labeler(env.observation_space.shape[0], context_dim = con_dim, activation=nn.LeakyReLU, **ac_kwargs)
-    con_encoder = con_labeler(env.observation_space.shape[0]*1000, context_dim=con_dim, activation=nn.LeakyReLU, **ac_kwargs)
+    # con_encoder = con_labeler(env.observation_space.shape[0]*1000, context_dim=con_dim, activation=nn.LeakyReLU, **ac_kwargs)
+
+    con_encoder = con_labeler(env.observation_space.shape[0], context_dim=con_dim, activation=nn.LeakyReLU,
+                              **ac_kwargs)
+
     con_decoder = reward_labeler((env.observation_space.shape[0] + con_dim), activation=nn.LeakyReLU, **ac_kwargs  )  # TODO: Try nn.Tanh here
 
     # Set up model saving
@@ -85,37 +91,14 @@ def steer_valor(env_fn,
     encoder_optimizer = Adam(con_encoder.parameters(), lr=dc_lr)
     decoder_optimizer = Adam(con_decoder.parameters(), lr=dc_lr)
 
-    # def compute_loss_reward(obs, ret):
-    #     guessed_reward = reward_nn(obs)
-    #     print("Guessed Reward over the episode: ", guessed_reward.sum())
-    #     print("Actual Reward over the episode: ", ret.sum())
-    #
-    #     v_loss = F.mse_loss(guessed_reward, ret)
-    #     # v_loss = F.l1_loss(guessed_reward, ret)
-
-        # return v_loss
-
     def update(e):
         obs, act, rew = [torch.Tensor(x) for x in buffer.retrieve_all()]
         shaped_rewards = rew.reshape(local_episodes_per_epoch, max_ep_len)
 
-        # print("fetched obs from buffer for update")   # print(obs)
         # Discriminator
         print('Discriminator Update!')
 
-
         con, s_diff = [torch.Tensor(x) for x in buffer.retrieve_dc_buff()]
-
-
-        # # Train policy with multiple steps of gradient descent
-        # for k in range(10):
-        #     reward_optimizer.zero_grad()
-        #     # split concatenated loss, take away the expert label for now
-        #     # TODO: Batch this operation
-        #     loss_v = compute_loss_reward(s_diff[k], shaped_rewards[k])
-        #     loss_v.backward()
-        #     mpi_avg_grads(reward_nn)
-        #     reward_optimizer.step()
 
         _, logp_dc, _ = discrim(s_diff, con)
         d_l_old = -logp_dc.mean()
@@ -149,11 +132,8 @@ def steer_valor(env_fn,
 
     def compute_loss_context(obs, ret):
         guessed_reward = con_decoder(obs)
-        print("Guessed Reward over the episode: ", guessed_reward.sum())
-        print("Actual Reward over the episode: ", ret.sum())
         v_loss = F.mse_loss(guessed_reward, ret)
-        print("------------")
-        print("Value Loss: ", v_loss)
+        print("Guessed Reward | Actual Reward | Value Loss \t %8.4f | %8.4f | %8.4f " % (guessed_reward.sum(), ret.sum(), v_loss))
         print("------------")
 
         return v_loss
@@ -162,7 +142,8 @@ def steer_valor(env_fn,
         discrim.eval()
         print("local episodes:", local_episodes_per_epoch)
         for ep in range(local_episodes_per_epoch):
-            t = random.randrange(0, len(replay_buffers))  # want to randomize draws for now
+            # Randomize among experts and sample replay buffers
+            t = random.randrange(0, len(replay_buffers))
 
             # Sample memory also
             mem_observations, mem_actions, mem_rewards, mem_costs = memories[t].sample()
@@ -179,67 +160,66 @@ def steer_valor(env_fn,
                 grouped_observations.append(mem_observations[start:end])
                 grouped_actions.append(mem_actions[start:end])
                 grouped_rewards.append(mem_rewards[start:end])
-                # print("grounded observations: ", grouped_observations)
 
             true_context = torch.tensor(t)
 
             # TODO: Feed the s_diff to this con_encoder
-            c = con_encoder.label_context(torch.flatten(torch.Tensor(grouped_observations[0])))
+            init_diff = grouped_observations[0][1] - grouped_observations[0][0]
+            print("GROUPED OBS: ", init_diff.shape)
+            # c = con_encoder.label_context(torch.flatten(torch.Tensor(grouped_observations[0])))
+            c = con_encoder.label_context(torch.flatten(torch.Tensor(init_diff)))
             print("Real Label \ Fake Label:  \t %d \ %d " % (true_context, c))
             # print("The fake context sample: ", c)
             c_onehot = F.one_hot(c, con_dim).squeeze().float()
             concat_obs = torch.cat([torch.Tensor(grouped_observations[0]), c_onehot.expand(1000, -1)], 1)  # for now only taking the first trajectory
-            # print("concat shape: ", concat_obs.shape)
+
+            ep_rewards = []
 
             for st in range(max_ep_len):
-                # draw sample from replay buffer (try just one at a time for now)
+                # draw trajectory from the memory (just one trajectory for now)
                 # TODO: Review sampling method
-
                 rewards = grouped_rewards[0][st]   # TODO: remove the 0s to complete the loop, change 0 to ep
                 actions = grouped_actions[0][st]
                 total_r += rewards
+                ep_rewards.append(rewards)
 
                 ep_len += 1
                 buffer.store(c, concat_obs[st].squeeze(), actions, rewards)
 
-                # instead of doing average over sequence dimension,
-                # do not need to average reward, just give reward now
+                # instead of doing average over sequence dimension,# do not need to average reward, just give reward now
                 terminal = (ep_len == max_ep_len)
+
                 if terminal:
                     print("episode reward: ", total_r)
                     dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
-                    # print("dc diff", dc_diff.shape)
                     con = torch.Tensor([float(c)]).unsqueeze(0)
                     _, loggt, _ = discrim(dc_diff, con)
 
                     dc_diff_concat = torch.cat([torch.Tensor(dc_diff[0]), c_onehot.expand(998, -1)], 1)
-
                     # use the concat obs and one-hot to predict episode reward (total r).
                     # the labeler gets the difference between true episode reward and the predicted reward as a loss
 
-                    for step in range(100):
+                    for step in range(5):
                         decoder_optimizer.zero_grad()
-                        encoder_optimizer.zero_grad()   # new
+                        encoder_optimizer.zero_grad()
                         # split concatenated loss, take away the expert label for now
                         # TODO: Batch this operation
                         # guess the reward based on state differences and episode reward (may want to change this to step by step)
-                        # print("evaluated step: ", dc_diff_concat[step])
-                        decode_loss = compute_loss_context(dc_diff_concat[step], total_r)
+                        decode_loss = compute_loss_context(dc_diff_concat[step], ep_rewards[step+1])
                         # decode_loss = F.mse_loss(con_decoder(dc_diff_concat[step]), total_r)
                         decode_loss.backward()
                         # print("Decoder Loss: ", decode_loss)
                         mpi_avg_grads(con_decoder)
                         decoder_optimizer.step()
 
-                        # # use value loss (ho as reward for the encoder
-                        # encode_loss = F.mse_loss(de)
-
-
-
-                    # print("Terminal 'ground' truth: ", con)
+                        # use value loss (how good is the decoder at guessing step reward) as reward for the encoder
+                        encode_loss = compute_loss_context(dc_diff_concat[step], ep_rewards[step+1])
+                        encode_loss.backward()
+                        mpi_avg_grads(con_encoder)
+                        encoder_optimizer.step()
 
                     buffer.finish_path(loggt.detach().numpy())
-                    ep_len, total_r = 0, 0
+                    ep_len, total_r, ep_rewards = 0, 0, []
 
         if (epoch % save_freq == 0) or (epoch == epochs - 1):
             logger.save_state({'env': env}, [discrim], None)
@@ -257,6 +237,49 @@ def steer_valor(env_fn,
         logger.log_tabular('DeltaLossDC', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
+
+    # After training, evaluate the final discriminator
+    print("RUNNING FINAL EVAL")
+    ground_truth, predictions = [], []
+
+    for _ in range(50):
+        discrim.eval()
+        for ep in range(local_episodes_per_epoch):
+            t = random.randrange(0, len(replay_buffers))  # want to randomize draws for now
+
+            # Sample memory also
+            mem_observations, mem_actions, mem_rewards, mem_costs = memories[t].sample()
+
+            episode_lengths = torch.tensor([len(episode) for episode in memories[t]])
+            episode_limits = torch.cat([torch.tensor([0]), torch.cumsum(episode_lengths, dim=-1)])
+
+            N = np.sum([len(episode) for episode in memories[t]])
+            T = max_ep_len  # simulator.max_ep_len
+
+            grouped_observations, grouped_rewards, grouped_actions = [], [], []  # grouped_observations = torch.zeros(N)
+
+            for start, end in zip(episode_limits[:-1], episode_limits[1:]):
+                grouped_observations.append(mem_observations[start:end])
+                grouped_actions.append(mem_actions[start:end])
+                grouped_rewards.append(mem_rewards[start:end])
+
+            true_context = torch.tensor(t)
+
+            init_diff = grouped_observations[0][1] - grouped_observations[0][0]
+
+            c = con_encoder.label_context(torch.flatten(torch.Tensor(init_diff)))
+            print("Real Label \ Fake Label:  \t %d \ %d " % (true_context, c))
+            c_onehot = F.one_hot(c, con_dim).squeeze().float()
+
+            # append labels for plotting
+            ground_truth.append(true_context)
+            predictions.append(c)
+
+
+    # Confusion matrix
+    class_names = ["1", "2", "3"]
+    wandb.log({"confusion_matrix": wplot.confusion_matrix(
+        y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
 
 
     wandb.finish()
