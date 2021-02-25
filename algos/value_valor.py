@@ -99,31 +99,34 @@ def value_valor(env_fn,
 
     def update(e):
         obs, act, rew = [torch.Tensor(x) for x in buffer.retrieve_all()]
-        simple_obs = torch.split(obs, [60,3], dim=1 )
-
+        shaped_rewards = rew.reshape(local_episodes_per_epoch, max_ep_len)
 
         # print("fetched obs from buffer for update")   # print(obs)
-
         # Discriminator
         print('Discriminator Update!')
 
         # print("Buffer states! ", obs)
         # print("State buffer shape: ", obs.shape)
-        # # print("Simple obs: ", simple_obs)
-        # print("split obs shape: ", torch.Tensor(simple_obs[0]).shape)
-        # # print("Buffer rewards! ", rew)
         # print("Rewards buffer shape: ", rew.shape)
         # print("Wow")
         # print(torch.Tensor(simple_obs[0]))
         # print("All DONE!")
 
         con, s_diff = [torch.Tensor(x) for x in buffer.retrieve_dc_buff()]
+        # print("s diff dimension: ", s_diff.shape)
+        # print("s diff dimension sample: ", s_diff[0].shape)
+        # print("reward sample before: ", rew.shape)
+        # print("reward sample after:", rew.reshape(local_episodes_per_epoch, max_ep_len).shape)
+        # print("take one: ", rew.reshape(local_episodes_per_epoch, max_ep_len)[0].shape)
+        #
+
 
         # Train policy with multiple steps of gradient descent
-        for _ in range(10):
+        for k in range(10):
             reward_optimizer.zero_grad()
             # split concatenated loss, take away the expert label for now
-            loss_v = compute_loss_reward(s_diff, rew)
+            # TODO: Batch this operation
+            loss_v = compute_loss_reward(s_diff[k], shaped_rewards[k])
             loss_v.backward()
             mpi_avg_grads(reward_nn)
             reward_optimizer.step()
@@ -167,75 +170,62 @@ def value_valor(env_fn,
             print("context sample: ", c)
             c_onehot = F.one_hot(c, con_dim).squeeze().float()
 
-            for _ in range(max_ep_len):
+            # Sample memory also
+            mem_observations, mem_actions, mem_rewards, mem_costs = memories[t].sample()
+
+            episode_lengths = torch.tensor([len(episode) for episode in memories[t]])
+            episode_limits = torch.cat([torch.tensor([0]), torch.cumsum(episode_lengths, dim=-1)])
+
+            N = np.sum([len(episode) for episode in memories[t]])
+            T = max_ep_len  # simulator.max_ep_len
+
+            grouped_observations = []   # grouped_observations = torch.zeros(N)
+            grouped_rewards = []
+
+            for start, end in zip(episode_limits[:-1], episode_limits[1:]):
+                grouped_observations.append(mem_observations[start:end])
+                grouped_rewards.append(mem_rewards[start:end])
+                # print("grounded observations: ", grouped_observations)
+
+            concat_obs = torch.cat([torch.Tensor(grouped_observations[0]), c_onehot.expand(1000, -1)], 1)  # for now only taking the first trajectory
+            # print("concat shape: ", concat_obs.shape)
+
+            for st in range(max_ep_len):
                 # draw sample from replay buffer (try just one at a time for now)
                 # TODO: Review sampling method
 
                 sample_rb = replay_buffers[t].sample(1)
                 o = sample_rb['obs']
                 a = sample_rb['act']
-                rewards = sample_rb['rew']
 
-                # Sample memory also
-                mem_observations, mem_actions, mem_rewards, mem_costs = memories[t].sample()
-
-
-                # print("Comparing the outputs")
-                # print("replay buffer observations: ", o.shape)
-                # print("memory observations: ", mem_observations.shape)
-
-                episode_lengths = torch.tensor([len(episode) for episode in memories[t]])
-                # print("episode lengths: ", episode_lengths)
-                episode_limits = torch.cat([torch.tensor([0]), torch.cumsum(episode_lengths, dim=-1)])
-                # print("episode limits: ", episode_limits)
-
-                N = np.sum([len(episode) for episode in memories[t]])
-
-                T = max_ep_len  # simulator.max_ep_len
-
-                # grouped_observations = torch.zeros(N)
-                grouped_observations = []
-                # print("N: ", N)
-
-
-                for start, end in zip(episode_limits[:-1], episode_limits[1:]):
-
-                    # print("start: ", start)
-                    # print("end: ", end)
-                    grouped_observations.append(mem_observations[start:end])
-                    # grouped_observations[start:end] = mem_observations[start:end]
+                rewards = grouped_rewards[0][st]
+                # print("new rewards: ", rewards)
+                # rewards = sample_rb['rew']
 
                 # print("grouped observations length: ", len(grouped_observations))
                 # print("first episode in grouped obs: ", len(grouped_observations[0]))
-
                 # next_o = sample_rb['next_obs']
-
                 # get change in state
                 # o_diff = torch.tensor(next_o - o)
 
+                # total_r += rewards[0]
+                total_r += rewards
 
 
-                total_r += rewards[0]
 
                 reward_pred = reward_nn(torch.tensor(o).float())
-                reward_loss = reward_criterion(reward_pred, torch.tensor(rewards))
+                reward_loss = reward_criterion(reward_pred.clone().detach(), torch.tensor(rewards))
 
                 test_reward_pred = reward_nn(torch.tensor(grouped_observations[0]).float())
                 test_reward_loss = reward_criterion(test_reward_pred, torch.tensor(mem_rewards))
-                print("test reward loss: ", test_reward_loss)
-
-                # print("Reward Loss:", reward_loss)
-                # print("reward predictions: ", reward_pred)
-                # print("actual rewards: ", rewards)
-
-                # var_counts = tuple(count_vars(module) for module in [ac.pi, ac.v])
-                # logger.log('\nNumber of parameters: \t pi: %d, \t v: %d\n' % var_counts)
+                # print("test reward loss: ", test_reward_loss)
 
                 # concat_obs = torch.cat([torch.Tensor(o_diff.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
-                concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
+                # concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)  ### old singular episode batching
 
                 ep_len += 1
-                buffer.store(c, concat_obs.squeeze(), a, rewards)
+                # buffer.store(c, concat_obs.squeeze(), a, rewards)
+                buffer.store(c, concat_obs[st].squeeze(), a, rewards)
 
                 # instead of doing average over sequence dimension, do not need to average reward,
                 # just give reward now
@@ -266,53 +256,6 @@ def value_valor(env_fn,
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
 
-    # After training, evaluate the final discriminator
-    #
-    # # Run eval
-    # print("RUNNING FINAL EVAL")
-    #
-    # ground_truth = []
-    # predictions = []
-    # ep_len = 0
-    #
-    # for _ in range(50):
-    #     discrim.eval()
-    #     for ep in range(local_episodes_per_epoch):
-    #         t = random.randrange(0, len(replay_buffers))  # want to randomize draws for now
-    #         c = torch.tensor(t)
-    #         print("context sample: ", c)
-    #         c_onehot = F.one_hot(c, con_dim).squeeze().float()
-    #
-    #         for _ in range(max_ep_len):
-    #
-    #             sample_rb = replay_buffers[t].sample(1)
-    #             o = sample_rb['obs']
-    #             a = sample_rb['act']
-    #
-    #             concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
-    #
-    #             ep_len += 1
-    #             buffer.store(c, concat_obs.squeeze(), a)
-    #             terminal = (ep_len == max_ep_len)
-    #             if terminal:
-    #                 dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
-    #                 con = torch.Tensor([float(c)]).unsqueeze(0)
-    #                 label, loggt_dc, logp_dc, gt = discrim(dc_diff, con, classes=True)
-    #
-    #                 ground_truth.append(int(gt[0][0]))
-    #                 predictions.append(int(label[0]))
-    #
-    #                 buffer.finish_path(loggt_dc.detach().numpy())
-    #                 ep_len = 0
-    #
-    #     # Update
-    #     discrim.train()
-    #     obs, act = [torch.Tensor(x) for x in buffer.retrieve_all()]
-    #
-    # # Confusion matrix
-    # class_names = ["cyan", "marigold", "rose"]
-    # wandb.log({"confusion_mat": wplot.confusion_matrix(
-    #     y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
 
     wandb.finish()
 

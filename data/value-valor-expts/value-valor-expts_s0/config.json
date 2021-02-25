@@ -19,13 +19,13 @@
     },
     "dc_lr":	0.0005,
     "disc":	"ValorDiscriminator",
-    "env_fn":	"<function <lambda> at 0x7feb68a4da60>",
+    "env_fn":	"<function <lambda> at 0x7f4ea17d1af0>",
     "episodes_per_epoch":	10,
     "epochs":	20,
     "exp_name":	"value-valor-expts",
     "label_disc":	"GaussianReward",
     "logger":	{
-        "<utils.EpochLogger object at 0x7feb4b8580a0>":	{
+        "<utils.EpochLogger object at 0x7f4e845dd130>":	{
             "epoch_dict":	{},
             "exp_name":	"value-valor-expts",
             "first_row":	true,
@@ -46,25 +46,25 @@
     "max_ep_len":	1000,
     "memories":	[
         {
-            "<buffer_torch.Buffer object at 0x7feb68a0dbe0>":	{
-                "trajectories":	"[<buffer_torch.Trajectory object at 0x7feb68a0dc10>\n <buffer_torch.Trajectory object at 0x7feb4b75e0d0>]"
+            "<buffer_torch.Buffer object at 0x7f4ea1792bb0>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f4ea1792be0>\n <buffer_torch.Trajectory object at 0x7f4e844e30a0>]"
             }
         },
         {
-            "<buffer_torch.Buffer object at 0x7feb68a0d9a0>":	{
-                "trajectories":	"[<buffer_torch.Trajectory object at 0x7feb68a0da30>\n <buffer_torch.Trajectory object at 0x7feb4b54b4c0>]"
+            "<buffer_torch.Buffer object at 0x7f4ea1792970>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f4ea1792a00>\n <buffer_torch.Trajectory object at 0x7f4e8428f400>]"
             }
         },
         {
-            "<buffer_torch.Buffer object at 0x7feb4b8f5040>":	{
-                "trajectories":	"[<buffer_torch.Trajectory object at 0x7feb4b8f5190>\n <buffer_torch.Trajectory object at 0x7feb4b72b550>]"
+            "<buffer_torch.Buffer object at 0x7f4e8467b160>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f4e8467b0d0>\n <buffer_torch.Trajectory object at 0x7f4e844af610>]"
             }
         }
     ],
     "replay_buffers":	[
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7feb689c3b40>",
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7feb689c3930>",
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7feb4bda31a0>"
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f4e8502b9e0>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f4e8502b7d0>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f4e84b28040>"
     ],
     "save_freq":	10,
     "seed":	0,

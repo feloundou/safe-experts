@@ -122,7 +122,7 @@ value_valor(lambda: gym.make(ENV_NAME),
            dc_kwargs=dict(hidden_dims=[128] * 4),
            ac_kwargs=dict(hidden_sizes=[128] * 4),
            seed=0,
-           episodes_per_epoch=10,
+           episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            # epochs=100,
            epochs=20,
