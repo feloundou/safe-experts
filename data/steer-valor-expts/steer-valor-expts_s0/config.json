@@ -1,0 +1,75 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "composite_name":	"new_valor_standard",
+    "con_labeler":	"MLPContextLabeler",
+    "config_name":	"standard",
+    "dc_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "dc_lr":	0.0005,
+    "disc":	"ValorDiscriminator",
+    "env_fn":	"<function <lambda> at 0x7f7a2802fc10>",
+    "episodes_per_epoch":	10,
+    "epochs":	100,
+    "exp_name":	"steer-valor-expts",
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f7a0aed8190>":	{
+            "epoch_dict":	{},
+            "exp_name":	"steer-valor-expts",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/steer-valor-expts/steer-valor-expts_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/steer-valor-expts/steer-valor-expts_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"steer-valor-expts",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/steer-valor-expts/steer-valor-expts_s0"
+    },
+    "max_ep_len":	1000,
+    "memories":	[
+        {
+            "<buffer_torch.Buffer object at 0x7f7a27ff2d30>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f7a27ff2d60>\n <buffer_torch.Trajectory object at 0x7f7a0ad52460>\n <buffer_torch.Trajectory object at 0x7f7a0a994040>\n <buffer_torch.Trajectory object at 0x7f7a0a5df160>\n <buffer_torch.Trajectory object at 0x7f7a0a220e80>\n <buffer_torch.Trajectory object at 0x7f7a09e67ca0>\n <buffer_torch.Trajectory object at 0x7f7a09aacac0>\n <buffer_torch.Trajectory object at 0x7f7a096738e0>\n <buffer_torch.Trajectory object at 0x7f7a092b9700>\n <buffer_torch.Trajectory object at 0x7f7a08efe520>]"
+            }
+        },
+        {
+            "<buffer_torch.Buffer object at 0x7f7a27ff2af0>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f7a27ff2be0>\n <buffer_torch.Trajectory object at 0x7f7a09fbd880>\n <buffer_torch.Trajectory object at 0x7f7a09f606a0>\n <buffer_torch.Trajectory object at 0x7f7a099634c0>\n <buffer_torch.Trajectory object at 0x7f7a09cbd0a0>\n <buffer_torch.Trajectory object at 0x7f7a09e68280>\n <buffer_torch.Trajectory object at 0x7f7a087cbee0>\n <buffer_torch.Trajectory object at 0x7f7a0b74dd00>\n <buffer_torch.Trajectory object at 0x7f7a08b89b20>\n <buffer_torch.Trajectory object at 0x7f7a0854e940>]"
+            }
+        },
+        {
+            "<buffer_torch.Buffer object at 0x7f7a0b388220>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f7a0b388130>\n <buffer_torch.Trajectory object at 0x7f7a09815ca0>\n <buffer_torch.Trajectory object at 0x7f7a09287ac0>\n <buffer_torch.Trajectory object at 0x7f7a09da58e0>\n <buffer_torch.Trajectory object at 0x7f7a0b52d700>\n <buffer_torch.Trajectory object at 0x7f7a08426610>\n <buffer_torch.Trajectory object at 0x7f7a0b6b9340>\n <buffer_torch.Trajectory object at 0x7f7a07d450a0>\n <buffer_torch.Trajectory object at 0x7f7a0798be80>\n <buffer_torch.Trajectory object at 0x7f7a07577d60>]"
+            }
+        }
+    ],
+    "replay_buffers":	[
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f7a27f7ceb0>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f7a27f7cca0>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f7a0b384510>"
+    ],
+    "reward_labeler":	"GaussianReward",
+    "save_freq":	10,
+    "seed":	0,
+    "splitN":	999,
+    "train_dc_interv":	1,
+    "train_dc_iters":	10
+}

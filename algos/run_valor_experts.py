@@ -42,19 +42,19 @@ rose_expert = Expert(config_name='rose',
 
 # Get pre-saved trajectories
 # cyan
-cyan_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=1000, replay_buffer_size=10000)
+cyan_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
 
 cyan_rb = cyan_expert.replay_buffer
 cyan_memory = cyan_expert.memory
 
 # marigold
-marigold_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=1000, replay_buffer_size=10000)
+marigold_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
 
 marigold_rb = marigold_expert.replay_buffer
 marigold_memory = marigold_expert.memory
 
 # rose
-rose_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=1000, replay_buffer_size=10000)
+rose_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
 
 rose_rb = rose_expert.replay_buffer
 rose_memory = rose_expert.memory
@@ -62,18 +62,18 @@ rose_memory = rose_expert.memory
 print("replay buffers fetched")
 
 # Run simulation to collect demonstrations (just a gut-check here)
-# marigold_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=20,
+# marigold_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=10,
 #                                replay_buffer_size=10000)
 # marigold_rb = marigold_expert.replay_buffer
 # marigold_memory = marigold_expert.memory
-#
-# rose_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=20,
+
+# rose_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=10,
 #                                replay_buffer_size=10000)
 # rose_rb = rose_expert.replay_buffer
 # rose_memory = rose_expert.memory
-#
-#
-# cyan_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=20,
+
+
+# cyan_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=10,
 #                                replay_buffer_size=10000)
 # cyan_rb = cyan_expert.replay_buffer
 # cyan_memory = cyan_expert.memory
@@ -96,8 +96,6 @@ print("replay buffers fetched")
 # print(actions)
 # print(next_states)
 
-
-
 logger_kwargs = setup_logger_kwargs('pure-valor-expts', 0)
 
 # pure_valor(lambda: gym.make(ENV_NAME),
@@ -116,8 +114,25 @@ logger_kwargs = setup_logger_kwargs('pure-valor-expts', 0)
 logger_kwargs = setup_logger_kwargs('value-valor-expts', 0)
 
 
-ep_len_config=1000
-value_valor(lambda: gym.make(ENV_NAME),
+ep_len_config = 1000
+#
+# value_valor(lambda: gym.make(ENV_NAME),
+#            disc=ValorDiscriminator,
+#            dc_kwargs=dict(hidden_dims=[128] * 4),
+#            ac_kwargs=dict(hidden_sizes=[128] * 4),
+#            seed=0,
+#            episodes_per_epoch=10,   # fix reward accumulation
+#            max_ep_len=ep_len_config,
+#            # epochs=100,
+#            epochs=100,
+#            logger_kwargs=logger_kwargs, splitN=ep_len_config-1,
+#            replay_buffers=[cyan_rb, marigold_rb, rose_rb],
+#            memories=[cyan_memory, marigold_memory, rose_memory])
+
+
+logger_kwargs = setup_logger_kwargs('steer-valor-expts', 0)
+
+steer_valor(lambda: gym.make(ENV_NAME),
            disc=ValorDiscriminator,
            dc_kwargs=dict(hidden_dims=[128] * 4),
            ac_kwargs=dict(hidden_sizes=[128] * 4),
@@ -125,7 +140,7 @@ value_valor(lambda: gym.make(ENV_NAME),
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            # epochs=100,
-           epochs=20,
+           epochs=100,
            logger_kwargs=logger_kwargs, splitN=ep_len_config-1,
            replay_buffers=[cyan_rb, marigold_rb, rose_rb],
            memories=[cyan_memory, marigold_memory, rose_memory])

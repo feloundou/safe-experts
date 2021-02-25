@@ -9,7 +9,7 @@
     },
     "actor_critic":	"MLPActorCritic",
     "agent":	{
-        "<agent_types.PPOAgent object at 0x7f3be2fdad90>":	{
+        "<agent_types.PPOAgent object at 0x7fc60f314eb0>":	{
             "clip_ratio":	0.2,
             "kl_margin":	1.2,
             "params":	{
@@ -28,13 +28,13 @@
     "cost_lam":	0.97,
     "cost_lim":	0,
     "ent_reg":	0.0,
-    "env_fn":	"<function main.<locals>.<lambda> at 0x7f3be2fd2670>",
+    "env_fn":	"<function main.<locals>.<lambda> at 0x7fc60f30be50>",
     "epochs":	50,
     "exp_name":	"ppo_penalized_amaranth_8Ks_50e_64x2",
     "gamma":	0.99,
     "lam":	0.95,
     "logger":	{
-        "<utils.EpochLogger object at 0x7f3c941bea90>":	{
+        "<utils.EpochLogger object at 0x7fc60f314e50>":	{
             "epoch_dict":	{},
             "exp_name":	"ppo_penalized_amaranth_8Ks_50e_64x2",
             "first_row":	true,

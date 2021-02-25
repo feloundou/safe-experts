@@ -1447,22 +1447,10 @@ class PureVALORBuffer(object):
         # TODO: convert this into vector operation
         start = int(self.end[self.eps])
         ep_l = self.ptr - start - 1
-        # print("what is the start:", start)
-        for i in range(self.N-1):
-        # for i in range(1000):
 
+        for i in range(self.N-1):
             prev = int(i*ep_l/(self.N-1))
             succ = int((i+1)*ep_l/(self.N-1))
-            # print("Ep L", ep_l)
-            # print("PTR ", self.ptr)
-            # print("start", start)
-            # print("prev:", prev)
-            # print("succ:", succ)
-            # print("first end ", start+succ)
-            # print("last end", start+prev)
-
-            # print("start:", self.obs[start + succ][:self.obs_dim])
-            # print("end:", self.obs[start + prev][:self.obs_dim])
 
             self.dcbuf[self.eps, i] = self.obs[start + succ][:self.obs_dim] - self.obs[start + prev][:self.obs_dim]
 
@@ -1492,9 +1480,7 @@ class PureVALORBuffer(object):
                 ]
 
     def retrieve_dc_buff(self):
-        # print("dc eps", self.dc_eps)
-        # print("max batch", self.max_batch)
-        # print("dc_interval", self.dc_interv )
+
         assert self.dc_eps == self.max_batch * self.dc_interv
         self.dc_eps = 0
         return [self.con, self.dcbuf]

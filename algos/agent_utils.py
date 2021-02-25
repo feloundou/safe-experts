@@ -349,20 +349,14 @@ class Expert(Agent):
 
         print("Now adding trajectories to memory")
 
-        # policy_dims = [64, 64]
-
-        # Gaussian policy
-        # policy = MLP_DiagGaussianPolicy(obs_dim[0], policy_dims, act_dim[0])
-
-
+        n_trajectories = expert_episodes
+        print("N trajectories: ", n_trajectories)
+        trajectory_len = 1000
 
         if get_from_file:
             print(colorize("Pulling saved expert %s trajectories from file over %d episodes" %
                            (self.config_name, expert_episodes), 'blue', bold=True))
 
-            n_trajectories = 2
-            print("N trajectories: ", n_trajectories)
-            trajectory_len = 1000
 
             f = open(self._demo_dir + 'sim_data_' + str(expert_episodes) + '_buffer.pkl', "rb")
             buffer_file = pickle.load(f)
@@ -400,9 +394,8 @@ class Expert(Agent):
             self.memory = memory
             file_m.close()
 
-
-
         else:
+            print("N trajectories! ", n_trajectories)
             # Generate expert data
             print(colorize(
                 "Generating expert %s trajectories from file over %d episodes" % (
@@ -427,8 +420,6 @@ class Expert(Agent):
             self.replay_buffer = expert_rb
 
             print("Hello, Simulator for !", self.config_name)
-
-
 
             self.simulator = ExpertSinglePathSimulator('Safexp-PointGoal1-v0',
                                                        expert_pi, n_trajectories, trajectory_len)

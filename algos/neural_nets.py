@@ -117,7 +117,6 @@ class MLPCritic(nn.Module):
         return torch.squeeze(self.v_net(obs), -1)  # Critical to ensure v has right shape.
 
 
-
 class MLPActorCritic(nn.Module):
 
     def __init__(self, observation_space, action_space,
@@ -142,12 +141,92 @@ class MLPActorCritic(nn.Module):
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v = self.v(obs)
             vc = self.vc(obs)
-            # pen = self.pen(obs)
 
         return a.numpy(), v.numpy(), vc.numpy(), logp_a.numpy()
 
     def act(self, obs):
         return self.step(obs)[0]
+
+
+
+class MLPContextLabeler(Actor):
+
+    # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
+    def __init__(self, input_dim, context_dim, hidden_sizes, activation):
+        super().__init__()
+
+        # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
+        # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
+        # self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [context_dim], activation)
+
+        self.logits_net = mlp([input_dim] + list(hidden_sizes) + [context_dim], activation)
+
+    def _distribution(self, obs):
+        logits = self.logits_net(obs)
+        return Categorical(logits=logits)
+
+    def _log_prob_from_distribution(self, pi, con):
+        return pi.log_prob(con)
+
+    # def _distribution(self, obs):
+    #     mu = self.mu_net(obs)
+    #     std = torch.exp(self.log_std)
+    #     return Normal(mu, std)
+    #
+    # def _log_prob_from_distribution(self, pi, act):
+    #     return pi.log_prob(act).sum(axis=-1)  # Last axis sum needed for Torch Normal distribution
+
+    def label_context(self, obs):
+        with torch.no_grad():
+            pi = self._distribution(obs)
+            con = pi.sample()
+            # print("Drawn context: ", con)
+            # logp_con = self._log_prob_from_distribution(pi, con)
+
+        # return logp_con.numpy()
+        return con
+
+
+
+# class MLPRewardLabeler(Actor):
+#
+#     # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
+#     def __init__(self, input_dim, hidden_sizes, activation):
+#         super().__init__()
+#         reward_dim = 1
+#         self.logits_net = mlp([input_dim] + list(hidden_sizes) + [reward_dim], activation)
+#
+#     def _distribution(self, obs):
+#         logits = self.logits_net(obs)
+#         return Categorical(logits=logits)
+#
+#     def _log_prob_from_distribution(self, pi, con):
+#         return pi.log_prob(con)
+#
+#     def label_context(self, obs):
+#         with torch.no_grad():
+#             pi = self._distribution(obs)
+#             con = pi.sample()
+#             # print("Drawn context: ", con)
+#             # logp_con = self._log_prob_from_distribution(pi, con)
+#
+#         # return logp_con.numpy()
+#         return con
+
+class GaussianReward(nn.Module):
+    def __init__(self, obs_dim, hidden_sizes, activation):
+        super().__init__()
+
+        self.shared_net = mlp([obs_dim] + list(hidden_sizes), activation)
+        self.mu_net = nn.Linear(hidden_sizes[-1], 1)
+        self.var_net = nn.Linear(hidden_sizes[-1], 1)
+
+    def forward(self, x):
+
+        out = F.leaky_relu(self.shared_net(x))
+        mu = self.mu_net(out)
+        std = self.var_net(out)
+        return Normal(loc=mu, scale=std).rsample()
 
 
 
@@ -213,7 +292,6 @@ class GaussianReward(nn.Module):
         super().__init__()
 
         self.shared_net = mlp([obs_dim] + list(hidden_sizes), activation)
-
         self.mu_net = nn.Linear(hidden_sizes[-1], 1)
         self.var_net = nn.Linear(hidden_sizes[-1], 1)
 
@@ -222,10 +300,6 @@ class GaussianReward(nn.Module):
         out = F.leaky_relu(self.shared_net(x))
         mu = self.mu_net(out)
         std = self.var_net(out)
-
-        # print("mu", mu)
-        # print("std", std)
-
         return Normal(loc=mu, scale=std).rsample()
 
 

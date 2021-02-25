@@ -1,43 +1,42 @@
 # Main entrance of GAIL
 import numpy as np
-import torch
-import torch.nn.functional as F
 import gym
 import safety_gym
-import time
-import os.path as osp
-import random
+import time, random, torch, wandb
 
+import os.path as osp
+from torch import nn
+from torch.optim import Adam
+import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 
-from neural_nets import ActorCritic, ValorDiscriminator
+from neural_nets import ActorCritic, ValorDiscriminator, VDB, MLPContextLabeler, GaussianReward
 
-import wandb
+from utils import PureVALORBuffer, mpi_fork, proc_id, num_procs, EpochLogger, \
+    setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars
 
-from utils import VALORBuffer
-from utils import mpi_fork, proc_id, num_procs, EpochLogger,\
-     setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars,  mpi_sum
 
-def steer_valor(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
-          disc=ValorDiscriminator, dc_kwargs=dict(), seed=0,
-          episodes_per_epoch=40,
-          epochs=50, gamma=0.99, pi_lr=3e-4, vf_lr=1e-3, dc_lr=5e-4,
-          train_pi_iters=1, train_v_iters=80, train_dc_iters=10,
-          train_dc_interv=10,
-          lam=0.97,
-          # Cost constraints / penalties:
-          cost_lim=50,
-          penalty_init=1.,
-          penalty_lr=5e-3,
-          clip_ratio=0.2,
-          max_ep_len=1000, logger_kwargs=dict(), con_dim=5, config_name='standard',
-                replay_buffers=[],
-          save_freq=10, k=1):
+def steer_valor(env_fn,
+                disc=ValorDiscriminator,
+                con_labeler=MLPContextLabeler,
+                reward_labeler=GaussianReward,
+                ac_kwargs=dict(),
+                dc_kwargs=dict(),
+                seed=0,
+                episodes_per_epoch=40,
+                epochs=50,
+                dc_lr=5e-4,
+                train_dc_iters=10,
+                train_dc_interv=1,
+                max_ep_len=20, logger_kwargs=dict(),
+                config_name='standard',
+                splitN=8,
+                save_freq=10, replay_buffers=[], memories=[]):
     # W&B Logging
     wandb.login()
 
-    composite_name = 'new_valor_penalized_' + config_name
-    wandb.init(project="LearningCurves", group="Steered VALOR Expert", name=composite_name)
+    composite_name = 'new_valor_' + config_name
+    wandb.init(project="LearningCurves", group="Steer VALOR Expert", name=composite_name)
 
     assert replay_buffers != [], "Replay buffers must be set"
 
@@ -57,246 +56,211 @@ def steer_valor(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
     obs_dim = env.observation_space.shape
     act_dim = env.action_space.shape
 
-    ac_kwargs['action_space'] = env.action_space
-
-    # Model    # Create actor-critic modules and discriminator and monitor them
-    ac = actor_critic(input_dim=obs_dim[0] + con_dim, **ac_kwargs)
+    # Model    # Create discriminator and monitor it
+    con_dim = len(replay_buffers)
     discrim = disc(input_dim=obs_dim[0], context_dim=con_dim, **dc_kwargs)
 
+    # con_encoder = con_labeler(env.observation_space.shape[0], context_dim = con_dim, activation=nn.LeakyReLU, **ac_kwargs)
+    con_encoder = con_labeler(env.observation_space.shape[0]*1000, context_dim=con_dim, activation=nn.LeakyReLU, **ac_kwargs)
+    con_decoder = reward_labeler((env.observation_space.shape[0] + con_dim), activation=nn.LeakyReLU, **ac_kwargs  )  # TODO: Try nn.Tanh here
+
     # Set up model saving
-    logger.setup_pytorch_saver([ac, discrim])
+    logger.setup_pytorch_saver([discrim])
 
     # Sync params across processes
-    sync_params(ac)
     sync_params(discrim)
+    sync_params(con_encoder)
 
     # Buffer
     local_episodes_per_epoch = int(episodes_per_epoch / num_procs())
-    buffer = VALORBuffer(con_dim, obs_dim[0], act_dim[0], local_episodes_per_epoch, max_ep_len, train_dc_interv)
+    buffer = PureVALORBuffer(con_dim, obs_dim[0], act_dim[0], local_episodes_per_epoch, max_ep_len, train_dc_interv,
+                             N=splitN)
 
     # Count variables
-    var_counts = tuple(count_vars(module) for module in  [ac.pi, ac.v, discrim.pi])
-    logger.log('\nNumber of parameters: \t pi: %d, \t v: %d, \t d: %d\n' % var_counts)
+    var_counts = tuple(count_vars(module) for module in [discrim.pi])
+    logger.log('\nNumber of parameters: \t d: %d\n' % var_counts)
 
     # Optimizers
-    pi_optimizer = torch.optim.Adam(ac.pi.parameters(), lr=pi_lr)
-    vf_optimizer = torch.optim.Adam(ac.v.parameters(), lr=vf_lr)
-    discrim_optimizer = torch.optim.Adam(discrim.pi.parameters(), lr=dc_lr)
+    discrim_optimizer = Adam(discrim.pi.parameters(), lr=dc_lr)
+    encoder_optimizer = Adam(con_encoder.parameters(), lr=dc_lr)
+    decoder_optimizer = Adam(con_decoder.parameters(), lr=dc_lr)
 
-    def compute_loss_pi(obs, act, adv, logp_old):
-        # Policy loss # policy gradient term + entropy term
-        # Policy loss with clipping (without clipping, loss_pi = -(logp*adv).mean()).
-        # TODO: Think about removing clipping
-        _, logp, _ = ac.pi(obs, act)
+    # def compute_loss_reward(obs, ret):
+    #     guessed_reward = reward_nn(obs)
+    #     print("Guessed Reward over the episode: ", guessed_reward.sum())
+    #     print("Actual Reward over the episode: ", ret.sum())
+    #
+    #     v_loss = F.mse_loss(guessed_reward, ret)
+    #     # v_loss = F.l1_loss(guessed_reward, ret)
 
-        ratio = torch.exp(logp - logp_old)
-        clip_adv = torch.clamp(ratio, 1 - clip_ratio, 1 + clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv)).mean()
-
-        return loss_pi
-
-
-    def penalty_update(cur_penalty):  # update penalty
-        cur_cost = logger.get_stats('EpCost')[0]
-        cur_penalty = max(0, cur_penalty + penalty_lr * (cur_cost - cost_lim))
-        return cur_penalty
+        # return v_loss
 
     def update(e):
-        obs, act, adv, pos, ret, cost, logp_old = [torch.Tensor(x) for x in buffer.retrieve_all()]
+        obs, act, rew = [torch.Tensor(x) for x in buffer.retrieve_all()]
+        shaped_rewards = rew.reshape(local_episodes_per_epoch, max_ep_len)
 
-        # cur_cost = logger.get_stats('EpCost')[0]
-        # cur_rew = logger.get_stats('EpRet')[0]
-
-        mov_avg_ret = ret.sum(axis=-1)/(episodes_per_epoch)
-        mov_avg_cost = cost.sum(axis=-1)/(episodes_per_epoch)
-
-        # Train policy with multiple steps of gradient descent
-        for _ in range(train_pi_iters):
-            pi_optimizer.zero_grad()
-            loss_pi = compute_loss_pi(obs, act, adv, ret)
-            loss_pi.backward()
-            mpi_avg_grads(ac.pi)
-            pi_optimizer.step()
-
-        # Value function
-        v = ac.v(obs)
-        v_l_old = F.mse_loss(v, ret)
-
-        for _ in range(train_v_iters):
-            v = ac.v(obs)
-            v_loss = F.mse_loss(v, ret)
-
-            # Value function train
-            vf_optimizer.zero_grad()
-            v_loss.backward()
-            mpi_avg_grads(ac.v)
-            vf_optimizer.step()
-
+        # print("fetched obs from buffer for update")   # print(obs)
         # Discriminator
-        if (e + 1) % train_dc_interv == 0:
-            print('Discriminator Update!')
-            # Remove BiLSTM, take FFNN, take state_diff and predict what the context was
-            # Predict what was the context based on the tuple (or just context from just the current state)
+        print('Discriminator Update!')
 
-            con, s_diff = [torch.Tensor(x) for x in buffer.retrieve_dc_buff()]
-            print("s diff: ", s_diff)
-            print("s diff shape: ", s_diff.shape)
+
+        con, s_diff = [torch.Tensor(x) for x in buffer.retrieve_dc_buff()]
+
+
+        # # Train policy with multiple steps of gradient descent
+        # for k in range(10):
+        #     reward_optimizer.zero_grad()
+        #     # split concatenated loss, take away the expert label for now
+        #     # TODO: Batch this operation
+        #     loss_v = compute_loss_reward(s_diff[k], shaped_rewards[k])
+        #     loss_v.backward()
+        #     mpi_avg_grads(reward_nn)
+        #     reward_optimizer.step()
+
+        _, logp_dc, _ = discrim(s_diff, con)
+        d_l_old = -logp_dc.mean()
+
+        discriminator_metrics = {'discriminator loss': d_l_old}
+
+        wandb.log(discriminator_metrics)
+
+        # Discriminator train
+        for _ in range(train_dc_iters):
             _, logp_dc, _ = discrim(s_diff, con)
-            d_l_old = -logp_dc.mean()
+            d_loss = -logp_dc.mean()  # Tyna remove the mean and give per time step reward
+            discrim_optimizer.zero_grad()
+            d_loss.backward()
+            mpi_avg_grads(discrim.pi)
+            discrim_optimizer.step()
 
-            # Discriminator train
-            for _ in range(train_dc_iters):
-                _, logp_dc, _ = discrim(s_diff, con)
-                d_loss = -logp_dc.mean()
-                discrim_optimizer.zero_grad()
-                d_loss.backward()
-                mpi_avg_grads(discrim.pi)
-                discrim_optimizer.step()
+        label, loggt_dc, logp_dc, gt = discrim(s_diff, con, classes=True)
 
-            _, logp_dc, _ = discrim(s_diff, con)
-            dc_l_new = -logp_dc.mean()
-        else:
-            d_l_old = 0
-            dc_l_new = 0
+        print("LABELS: ", label)
+        print("GROUND TRUTH: ", gt)
 
-        # Log the changes
-        print("logging changes")
-        _, logp, _, v = ac(obs, act)
-        pi_l_new = -(logp * (k * adv + pos)).mean()
-        v_l_new = F.mse_loss(v, ret)
-        kl = (logp_old - logp).mean()
-        logger.store(LossPi=loss_pi, LossV=v_l_old, KL=kl,
-                     # Entropy=entropy,
-                     DeltaLossPi=(pi_l_new - loss_pi),
-                     DeltaLossV=(v_l_new - v_l_old),
-                     LossDC=d_l_old,
+        dc_l_new = -loggt_dc.mean()
+
+        logger.store(LossDC=d_l_old,
                      DeltaLossDC=(dc_l_new - d_l_old))
 
-        update_metrics = {'10p mov avg ret': mov_avg_ret,
-                          '10p mov avg cost': mov_avg_cost,
-                          'current penalty': cur_penalty
-                          }
-
-        wandb.log(update_metrics)
-
-        # logger.store(Adv=adv.reshape(-1).numpy().tolist(), Pos=pos.reshape(-1).numpy().tolist())
-
     start_time = time.time()
-    o, r, d, ep_ret, ep_cost, ep_len, cum_reward, cum_cost = env.reset(), 0, False, 0, 0, 0, 0, 0
-    rew_mov_avg, cost_mov_avg = [], []
-    context_dist = Categorical(logits=torch.Tensor(np.ones(con_dim)))
-    print("context distribution:", context_dist)
-    total_t = 0
+    # context_dist = Categorical(logits=torch.Tensor(np.ones(con_dim)))
+    total_t, ep_len, total_r = 0, 0, 0
 
-    # Initialize penalty
-    cur_penalty = np.log(max(np.exp(penalty_init) - 1, 1e-8))
+    def compute_loss_context(obs, ret):
+        guessed_reward = con_decoder(obs)
+        print("Guessed Reward over the episode: ", guessed_reward.sum())
+        print("Actual Reward over the episode: ", ret.sum())
+        v_loss = F.mse_loss(guessed_reward, ret)
+        print("------------")
+        print("Value Loss: ", v_loss)
+        print("------------")
+
+        return v_loss
 
     for epoch in range(epochs):
-        ac.eval()
         discrim.eval()
-        for _ in range(local_episodes_per_epoch):
-            # c = context_dist.sample()
-            # print("context sample: ", c)
-            # c_onehot = F.one_hot(c, con_dim).squeeze().float()
-            # print("one hot sample: ", c_onehot)
-
+        print("local episodes:", local_episodes_per_epoch)
+        for ep in range(local_episodes_per_epoch):
             t = random.randrange(0, len(replay_buffers))  # want to randomize draws for now
-            c = torch.tensor(t)
-            print("context sample: ", c)
+
+            # Sample memory also
+            mem_observations, mem_actions, mem_rewards, mem_costs = memories[t].sample()
+
+            episode_lengths = torch.tensor([len(episode) for episode in memories[t]])
+            episode_limits = torch.cat([torch.tensor([0]), torch.cumsum(episode_lengths, dim=-1)])
+
+            N = np.sum([len(episode) for episode in memories[t]])
+            T = max_ep_len  # simulator.max_ep_len
+
+            grouped_observations, grouped_rewards, grouped_actions = [], [], []   # grouped_observations = torch.zeros(N)
+
+            for start, end in zip(episode_limits[:-1], episode_limits[1:]):
+                grouped_observations.append(mem_observations[start:end])
+                grouped_actions.append(mem_actions[start:end])
+                grouped_rewards.append(mem_rewards[start:end])
+                # print("grounded observations: ", grouped_observations)
+
+            true_context = torch.tensor(t)
+
+            # TODO: Feed the s_diff to this con_encoder
+            c = con_encoder.label_context(torch.flatten(torch.Tensor(grouped_observations[0])))
+            print("Real Label \ Fake Label:  \t %d \ %d " % (true_context, c))
+            # print("The fake context sample: ", c)
             c_onehot = F.one_hot(c, con_dim).squeeze().float()
+            concat_obs = torch.cat([torch.Tensor(grouped_observations[0]), c_onehot.expand(1000, -1)], 1)  # for now only taking the first trajectory
+            # print("concat shape: ", concat_obs.shape)
 
-            for _ in range(max_ep_len):
+            for st in range(max_ep_len):
+                # draw sample from replay buffer (try just one at a time for now)
+                # TODO: Review sampling method
 
-                concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
+                rewards = grouped_rewards[0][st]   # TODO: remove the 0s to complete the loop, change 0 to ep
+                actions = grouped_actions[0][st]
+                total_r += rewards
 
-                a, _, logp_t, v_t = ac(concat_obs)
-
-                o, r, d, info = env.step(a.detach().numpy()[0])
-                cost = info.get("cost")
-                if cost is None:
-                    print("Hey! Cost NoneType Error: ", info)
-                    print(info)
-                    print("What was the reward? :", r)
-
-                ep_cost += cost
-                ep_ret += r
                 ep_len += 1
-                total_t += 1
+                buffer.store(c, concat_obs[st].squeeze(), actions, rewards)
 
-                cum_reward += r
-                cum_cost += cost
-
-                r_total = r - cur_penalty * cost
-                r_total /= (1 + cur_penalty)
-
-                buffer.store(c, concat_obs.squeeze().detach().numpy(), a.detach().numpy(), r_total, cost, v_t.item(),
-                             logp_t.detach().numpy())
-
-                # buffer.store(c, concat_obs.squeeze().detach().numpy(), a.detach().numpy(), r, v_t.item(),
-                #              logp_t.detach().numpy())
-                logger.store(VVals=v_t)
-
-                terminal = d or (ep_len == max_ep_len)
+                # instead of doing average over sequence dimension,
+                # do not need to average reward, just give reward now
+                terminal = (ep_len == max_ep_len)
                 if terminal:
+                    print("episode reward: ", total_r)
                     dc_diff = torch.Tensor(buffer.calc_diff()).unsqueeze(0)
+                    # print("dc diff", dc_diff.shape)
                     con = torch.Tensor([float(c)]).unsqueeze(0)
-                    print("context going into discrim:", con)
                     _, loggt, _ = discrim(dc_diff, con)
-                    # instead of doing average over sequence dimension, do not need to average reward,
-                    # just give reward now
-                    # with pure VAE, do not have to calculate advantages
+
+                    dc_diff_concat = torch.cat([torch.Tensor(dc_diff[0]), c_onehot.expand(998, -1)], 1)
+
+                    # use the concat obs and one-hot to predict episode reward (total r).
+                    # the labeler gets the difference between true episode reward and the predicted reward as a loss
+
+                    for step in range(100):
+                        decoder_optimizer.zero_grad()
+                        encoder_optimizer.zero_grad()   # new
+                        # split concatenated loss, take away the expert label for now
+                        # TODO: Batch this operation
+                        # guess the reward based on state differences and episode reward (may want to change this to step by step)
+                        # print("evaluated step: ", dc_diff_concat[step])
+                        decode_loss = compute_loss_context(dc_diff_concat[step], total_r)
+                        # decode_loss = F.mse_loss(con_decoder(dc_diff_concat[step]), total_r)
+                        decode_loss.backward()
+                        # print("Decoder Loss: ", decode_loss)
+                        mpi_avg_grads(con_decoder)
+                        decoder_optimizer.step()
+
+                        # # use value loss (ho as reward for the encoder
+                        # encode_loss = F.mse_loss(de)
+
+
+
+                    # print("Terminal 'ground' truth: ", con)
 
                     buffer.finish_path(loggt.detach().numpy())
-                    logger.store(EpRet=ep_ret, EpCost=ep_cost, EpLen=ep_len)
-
-                    episode_metrics = {'average ep ret': ep_ret, 'average ep cost': ep_cost}
-
-                    wandb.log(episode_metrics)
-
-                    o, r, d, ep_ret, ep_cost, ep_len = env.reset(), 0, False, 0, 0, 0
+                    ep_len, total_r = 0, 0
 
         if (epoch % save_freq == 0) or (epoch == epochs - 1):
-            logger.save_state({'env': env}, [ac, discrim], None)
+            logger.save_state({'env': env}, [discrim], None)
 
         # Update
-        ac.train()
         discrim.train()
-
-        # update penalty
-        cur_penalty = penalty_update(cur_penalty)
 
         # update models
         update(epoch)
 
-        #  Cumulative cost calculations
-        cumulative_cost = mpi_sum(cum_cost)
-        cumulative_reward = mpi_sum(cum_reward)
-
-        cost_rate = cumulative_cost / ((epoch + 1) * episodes_per_epoch * max_ep_len)
-        reward_rate = cumulative_reward / ((epoch + 1) * episodes_per_epoch * max_ep_len)
-
-        log_metrics = {'cost rate': cost_rate, 'reward rate': reward_rate}
-        wandb.log(log_metrics)
-
         # Log
         logger.log_tabular('Epoch', epoch)
-        logger.log_tabular('EpRet', with_min_and_max=True)
-        logger.log_tabular('EpCost', with_min_and_max=True)
-        logger.log_tabular('EpLen', average_only=True)
-        logger.log_tabular('VVals', with_min_and_max=True)
-        logger.log_tabular('TotalEnvInteracts', total_t)
-        logger.log_tabular('LossPi', average_only=True)
-        logger.log_tabular('DeltaLossPi', average_only=True)
-        logger.log_tabular('LossV', average_only=True)
-        logger.log_tabular('DeltaLossV', average_only=True)
+        # logger.log_tabular('EpLen', average_only=True)
         logger.log_tabular('LossDC', average_only=True)
         logger.log_tabular('DeltaLossDC', average_only=True)
-        # logger.log_tabular('Entropy', average_only=True)
-        logger.log_tabular('KL', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
 
+
     wandb.finish()
+
 
 if __name__ == '__main__':
     import argparse
@@ -305,15 +269,12 @@ if __name__ == '__main__':
     parser.add_argument('--env', type=str, default='Safexp-PointGoal1-v0')
     parser.add_argument('--hid', type=int, default=128)
     parser.add_argument('--l', type=int, default=2)
-    parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--lam', type=float, default=0.97)
     parser.add_argument('--seed', '-s', type=int, default=0)
     parser.add_argument('--cpu', type=int, default=1)
     parser.add_argument('--episodes-per-epoch', type=int, default=5)
-    # parser.add_argument('--episodes-per-epoch', type=int, default=40)
     parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--exp_name', type=str, default='valor-anonymous-expert')
-    parser.add_argument('--con', type=int, default=5)
+    parser.add_argument('--con', type=int, default=10)
     args = parser.parse_args()
 
     mpi_fork(args.cpu)
@@ -322,9 +283,9 @@ if __name__ == '__main__':
 
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
-    steer_valor(lambda: gym.make(args.env), actor_critic=ActorCritic,
-                    ac_kwargs=dict(hidden_dims=[args.hid] * args.l),
-          disc=ValorDiscriminator, dc_kwargs=dict(hidden_dims=[args.hid]*args.l),
-                    # dc_kwargs=dict(hidden_dims=[args.hid]),
-          gamma=args.gamma, seed=args.seed, episodes_per_epoch=args.episodes_per_epoch, epochs=args.epochs,
-          logger_kwargs=logger_kwargs, con_dim=args.con)
+    steer_valor(lambda: gym.make(args.env),
+                disc=ValorDiscriminator, ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
+                dc_kwargs=dict(hidden_dims=[args.hid] * args.l),
+                seed=args.seed, episodes_per_epoch=args.episodes_per_epoch,
+                epochs=args.epochs,
+                logger_kwargs=logger_kwargs)

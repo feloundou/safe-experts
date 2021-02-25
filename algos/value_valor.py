@@ -1,24 +1,18 @@
 # Main entrance of GAIL
 import numpy as np
-import torch
-import torch.nn.functional as F
 import gym
 import safety_gym
-import time
-import random
+import time, random, torch, wandb
+
 import os.path as osp
 from torch import nn
 from torch.optim import Adam
-
+import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 
 from neural_nets import ActorCritic, ValorDiscriminator, VDB, GaussianReward
 
-import wandb
-import wandb.plot as wplot
-
-from utils import PureVALORBuffer
-from utils import mpi_fork, proc_id, num_procs, EpochLogger, \
+from utils import PureVALORBuffer, mpi_fork, proc_id, num_procs, EpochLogger, \
     setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars
 
 
@@ -64,11 +58,9 @@ def value_valor(env_fn,
     # Model    # Create discriminator and monitor it
     con_dim = len(replay_buffers)
     discrim = disc(input_dim=obs_dim[0], context_dim=con_dim, **dc_kwargs)
-    # label_nn = label_disc(input_dim=obs_dim)
 
     reward_nn = label_disc(env.observation_space.shape[0],  activation=nn.LeakyReLU, **ac_kwargs)
-
-    reward_criterion = criterion = nn.MSELoss()
+    # reward_criterion = nn.MSELoss()
 
     # Set up model saving
     logger.setup_pytorch_saver([discrim])
@@ -93,8 +85,16 @@ def value_valor(env_fn,
         guessed_reward = reward_nn(obs)
         print("Guessed Reward over the episode: ", guessed_reward.sum())
         print("Actual Reward over the episode: ", ret.sum())
-        v_loss = ((guessed_reward - ret) ** 2).mean()
-        print()
+
+        v_loss = F.mse_loss(guessed_reward, ret)
+        # v_loss = F.l1_loss(guessed_reward, ret)
+
+        # v_loss = ((guessed_reward*100 - ret*100) ** 2).mean() # scaling loss
+        # pseudo_loss = ((guessed_reward[0:5] - ret[0:5]) ** 2).mean()
+        print("------------")
+        print("Value Loss: ", v_loss)
+        print("------------")
+        # rescaling error to see if affects results
         return v_loss
 
     def update(e):
@@ -202,26 +202,13 @@ def value_valor(env_fn,
                 # print("new rewards: ", rewards)
                 # rewards = sample_rb['rew']
 
-                # print("grouped observations length: ", len(grouped_observations))
-                # print("first episode in grouped obs: ", len(grouped_observations[0]))
-                # next_o = sample_rb['next_obs']
-                # get change in state
-                # o_diff = torch.tensor(next_o - o)
-
-                # total_r += rewards[0]
                 total_r += rewards
 
-
-
-                reward_pred = reward_nn(torch.tensor(o).float())
-                reward_loss = reward_criterion(reward_pred.clone().detach(), torch.tensor(rewards))
-
-                test_reward_pred = reward_nn(torch.tensor(grouped_observations[0]).float())
-                test_reward_loss = reward_criterion(test_reward_pred, torch.tensor(mem_rewards))
-                # print("test reward loss: ", test_reward_loss)
-
-                # concat_obs = torch.cat([torch.Tensor(o_diff.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)
-                # concat_obs = torch.cat([torch.Tensor(o.reshape(1, -1)), c_onehot.reshape(1, -1)], 1)  ### old singular episode batching
+                # reward_pred = reward_nn(torch.tensor(o).float())
+                # reward_loss = reward_criterion(reward_pred.clone().detach(), torch.tensor(rewards))
+                #
+                # test_reward_pred = reward_nn(torch.tensor(grouped_observations[0]).float())
+                # test_reward_loss = reward_criterion(test_reward_pred, torch.tensor(mem_rewards))
 
                 ep_len += 1
                 # buffer.store(c, concat_obs.squeeze(), a, rewards)
