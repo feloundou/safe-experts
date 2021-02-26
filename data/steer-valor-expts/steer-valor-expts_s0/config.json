@@ -21,12 +21,12 @@
     },
     "dc_lr":	0.0005,
     "disc":	"ValorDiscriminator",
-    "env_fn":	"<function <lambda> at 0x7f85632c1310>",
+    "env_fn":	"<function <lambda> at 0x7f7c80bae310>",
     "episodes_per_epoch":	10,
     "epochs":	50,
     "exp_name":	"steer-valor-expts",
     "logger":	{
-        "<utils.EpochLogger object at 0x7f85631ff910>":	{
+        "<utils.EpochLogger object at 0x7f7d0feacf40>":	{
             "epoch_dict":	{},
             "exp_name":	"steer-valor-expts",
             "first_row":	true,
@@ -47,20 +47,20 @@
     "max_ep_len":	1000,
     "memories":	[
         {
-            "<buffer_torch.Buffer object at 0x7f85632297f0>":	{
-                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f8563229880>\n <buffer_torch.Trajectory object at 0x7f85451f5580>\n <buffer_torch.Trajectory object at 0x7f85457903a0>\n <buffer_torch.Trajectory object at 0x7f8544892100>\n <buffer_torch.Trajectory object at 0x7f85452b9ee0>\n <buffer_torch.Trajectory object at 0x7f85450a1dc0>\n <buffer_torch.Trajectory object at 0x7f8545501be0>\n <buffer_torch.Trajectory object at 0x7f8546982a00>\n <buffer_torch.Trajectory object at 0x7f8543dc1820>\n <buffer_torch.Trajectory object at 0x7f8543784640>]"
+            "<buffer_torch.Buffer object at 0x7f7c80b156d0>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f7c80b158e0>\n <buffer_torch.Trajectory object at 0x7f7c61f5e580>\n <buffer_torch.Trajectory object at 0x7f7c62bb83a0>\n <buffer_torch.Trajectory object at 0x7f7c621ba100>\n <buffer_torch.Trajectory object at 0x7f7c6279cee0>\n <buffer_torch.Trajectory object at 0x7f7c63105dc0>\n <buffer_torch.Trajectory object at 0x7f7c638edbe0>\n <buffer_torch.Trajectory object at 0x7f7c6426da00>\n <buffer_torch.Trajectory object at 0x7f7c616ec820>\n <buffer_torch.Trajectory object at 0x7f7c6106f640>]"
             }
         },
         {
-            "<buffer_torch.Buffer object at 0x7f854610f160>":	{
-                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f854610f0d0>\n <buffer_torch.Trajectory object at 0x7f8545992880>\n <buffer_torch.Trajectory object at 0x7f85447bf7c0>\n <buffer_torch.Trajectory object at 0x7f854575d5e0>\n <buffer_torch.Trajectory object at 0x7f854676f400>\n <buffer_torch.Trajectory object at 0x7f8543760160>\n <buffer_torch.Trajectory object at 0x7f8546678040>\n <buffer_torch.Trajectory object at 0x7f8542f77e20>\n <buffer_torch.Trajectory object at 0x7f8542bc3c40>\n <buffer_torch.Trajectory object at 0x7f85427afa60>]"
+            "<buffer_torch.Buffer object at 0x7f7c639fa160>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f7c639fa0d0>\n <buffer_torch.Trajectory object at 0x7f7c6237c9a0>\n <buffer_torch.Trajectory object at 0x7f7c636f17c0>\n <buffer_torch.Trajectory object at 0x7f7c62c465e0>\n <buffer_torch.Trajectory object at 0x7f7c64057400>\n <buffer_torch.Trajectory object at 0x7f7c64378160>\n <buffer_torch.Trajectory object at 0x7f7c641e2040>\n <buffer_torch.Trajectory object at 0x7f7c60861e20>\n <buffer_torch.Trajectory object at 0x7f7c604aec40>\n <buffer_torch.Trajectory object at 0x7f7c60099a60>]"
             }
         }
     ],
     "pi_lr":	0.0003,
     "replay_buffers":	[
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f8546acb5c0>",
-        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f8546acbe00>"
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f7c643b7510>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f7c643b7d50>"
     ],
     "reward_labeler":	"GaussianReward",
     "save_freq":	10,
