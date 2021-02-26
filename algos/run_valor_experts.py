@@ -8,7 +8,6 @@ from neural_nets import MLPActorCritic
 # Run Pure VALOR
 from pure_valor import pure_valor
 from steer_valor import steer_valor
-from blind_valor import blind_valor
 from value_valor import value_valor
 
 from neural_nets import ValorDiscriminator
