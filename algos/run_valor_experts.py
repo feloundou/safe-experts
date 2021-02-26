@@ -9,6 +9,7 @@ from neural_nets import MLPActorCritic
 from pure_valor import pure_valor
 from steer_valor import steer_valor
 from value_valor import value_valor
+from vanilla_valor import vanilla_valor
 
 from neural_nets import ValorDiscriminator
 from utils import setup_logger_kwargs
@@ -42,19 +43,16 @@ rose_expert = Expert(config_name='rose',
 # Get pre-saved trajectories
 # cyan
 cyan_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
-
 cyan_rb = cyan_expert.replay_buffer
 cyan_memory = cyan_expert.memory
 
 # marigold
 marigold_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
-
 marigold_rb = marigold_expert.replay_buffer
 marigold_memory = marigold_expert.memory
 
 # rose
 rose_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
-
 rose_rb = rose_expert.replay_buffer
 rose_memory = rose_expert.memory
 
@@ -129,9 +127,25 @@ ep_len_config = 1000
 #            memories=[cyan_memory, marigold_memory, rose_memory])
 
 
-logger_kwargs = setup_logger_kwargs('steer-valor-expts', 0)
+# logger_kwargs = setup_logger_kwargs('steer-valor-expts', 0)
+#
+# steer_valor(lambda: gym.make(ENV_NAME),
+#            disc=ValorDiscriminator,
+#            dc_kwargs=dict(hidden_dims=[128] * 4),
+#            ac_kwargs=dict(hidden_sizes=[128] * 4),
+#            seed=0,
+#            episodes_per_epoch=10,   # fix reward accumulation
+#            max_ep_len=ep_len_config,
+#            # epochs=100,
+#            epochs=50,
+#            logger_kwargs=logger_kwargs, splitN=ep_len_config-1,
+#            replay_buffers=[marigold_rb, rose_rb],
+#            memories=[marigold_memory, rose_memory])
 
-steer_valor(lambda: gym.make(ENV_NAME),
+
+logger_kwargs = setup_logger_kwargs('vanilla-valor-expts', 0)
+
+vanilla_valor(lambda: gym.make(ENV_NAME),
            disc=ValorDiscriminator,
            dc_kwargs=dict(hidden_dims=[128] * 4),
            ac_kwargs=dict(hidden_sizes=[128] * 4),
@@ -139,10 +153,11 @@ steer_valor(lambda: gym.make(ENV_NAME),
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            # epochs=100,
-           epochs=50,
+           epochs=500,
            logger_kwargs=logger_kwargs, splitN=ep_len_config-1,
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
+
 
 
 

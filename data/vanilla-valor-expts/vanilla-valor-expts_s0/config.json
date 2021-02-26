@@ -1,0 +1,72 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "actor_critic":	"ValorActorCritic",
+    "composite_name":	"new_valor_standard",
+    "con_labeler":	"MLPContextLabeler",
+    "config_name":	"standard",
+    "dc_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "dc_lr":	0.0005,
+    "disc":	"ValorDiscriminator",
+    "env_fn":	"<function <lambda> at 0x7f9ed2766820>",
+    "episodes_per_epoch":	10,
+    "epochs":	500,
+    "exp_name":	"vanilla-valor-expts",
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f9f62d5ff40>":	{
+            "epoch_dict":	{},
+            "exp_name":	"vanilla-valor-expts",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/vanilla-valor-expts/vanilla-valor-expts_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/vanilla-valor-expts/vanilla-valor-expts_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"vanilla-valor-expts",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/vanilla-valor-expts/vanilla-valor-expts_s0"
+    },
+    "max_ep_len":	1000,
+    "memories":	[
+        {
+            "<buffer_torch.Buffer object at 0x7f9ed271eca0>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f9ed271ecd0>\n <buffer_torch.Trajectory object at 0x7f9eb4af0a60>\n <buffer_torch.Trajectory object at 0x7f9eb3a107f0>\n <buffer_torch.Trajectory object at 0x7f9eb4099610>\n <buffer_torch.Trajectory object at 0x7f9eb4544430>\n <buffer_torch.Trajectory object at 0x7f9eb55a0190>\n <buffer_torch.Trajectory object at 0x7f9eb4e3a070>\n <buffer_torch.Trajectory object at 0x7f9eb5e7de50>\n <buffer_torch.Trajectory object at 0x7f9eb337ac70>\n <buffer_torch.Trajectory object at 0x7f9eb2fc2a90>]"
+            }
+        },
+        {
+            "<buffer_torch.Buffer object at 0x7f9eb5fce220>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f9eb5fce280>\n <buffer_torch.Trajectory object at 0x7f9eb5621bb0>\n <buffer_torch.Trajectory object at 0x7f9eb3cc1c10>\n <buffer_torch.Trajectory object at 0x7f9eb450aa30>\n <buffer_torch.Trajectory object at 0x7f9eb5c97730>\n <buffer_torch.Trajectory object at 0x7f9eb2c3d670>\n <buffer_torch.Trajectory object at 0x7f9eb29f7490>\n <buffer_torch.Trajectory object at 0x7f9eb24f1070>\n <buffer_torch.Trajectory object at 0x7f9eb2143190>\n <buffer_torch.Trajectory object at 0x7f9eb1d29eb0>]"
+            }
+        }
+    ],
+    "pi_lr":	0.0003,
+    "replay_buffers":	[
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f9eb5fc5510>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f9eb5fc5d50>"
+    ],
+    "reward_labeler":	"GaussianReward",
+    "save_freq":	10,
+    "seed":	0,
+    "splitN":	999,
+    "train_dc_interv":	1,
+    "train_dc_iters":	10,
+    "vae":	"VAELOR"
+}
