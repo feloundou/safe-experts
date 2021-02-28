@@ -1,24 +1,22 @@
 import numpy as np
 import scipy.signal
 from gym.spaces import Box, Discrete
-from typing import List, Callable, Union, Any, TypeVar, Tuple
 
-
+import numpy as np
+import torch.nn.functional as F
+from torch import nn
 from torch.nn import Parameter
-
 import torch.nn.functional as F
 
 import torch
-import torch.nn as nn
-from torch.distributions import Independent
 
+from torch.distributions import Independent, OneHotCategorical
 from torch.distributions.normal import Normal
 from torch.distributions.categorical import Categorical
 
 from utils import *
 
 
-Tensor = TypeVar('torch.tensor')
 
 def mlp(sizes, activation, output_activation=nn.Identity):
     layers = []
@@ -66,13 +64,9 @@ class MLPGaussianActor(Actor):
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
 
-        # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
-        # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        # self.log_std = nn.Parameter(-0.5 * torch.ones(act_dim))
         log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
         self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        # print("test list")
-        # print(list(hidden_sizes))
+
         self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
     def _distribution(self, obs):
@@ -101,10 +95,6 @@ class GaussianPolicy(nn.Module):
         if act is not None:
             logp = policy.log_prob(act).sum(dim=1)
 
-            # print("gaussian action: ", act)
-            # print("pi:", pi)
-            # print("log pi:", logp_pi)
-            # print("logp:", logp)
 
         else:
             logp = None
@@ -183,69 +173,8 @@ class ValorActorCritic(nn.Module):
     def act(self, obs):
         return self.step(obs)[0]
 
-class MLPContextLabeler(Actor):
-
-    # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
-    def __init__(self, input_dim, context_dim, hidden_sizes, activation):
-        super().__init__()
-
-        # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
-        # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        # self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [context_dim], activation)
-
-        self.logits_net = mlp([input_dim] + list(hidden_sizes) + [context_dim], activation)
-
-    def _distribution(self, obs):
-        logits = self.logits_net(obs)
-        return Categorical(logits=logits)
-
-    def _log_prob_from_distribution(self, pi, con):
-        return pi.log_prob(con)
-
-    # def _distribution(self, obs):
-    #     mu = self.mu_net(obs)
-    #     std = torch.exp(self.log_std)
-    #     return Normal(mu, std)
-    #
-    # def _log_prob_from_distribution(self, pi, act):
-    #     return pi.log_prob(act).sum(axis=-1)  # Last axis sum needed for Torch Normal distribution
-
-    def label_context(self, obs):
-        with torch.no_grad():
-            pi = self._distribution(obs)
-            con = pi.sample()
-            # print("Drawn context: ", con)
-            # logp_con = self._log_prob_from_distribution(pi, con)
-
-        # return logp_con.numpy()
-        return con
 
 
-
-# class MLPRewardLabeler(Actor):
-#
-#     # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
-#     def __init__(self, input_dim, hidden_sizes, activation):
-#         super().__init__()
-#         reward_dim = 1
-#         self.logits_net = mlp([input_dim] + list(hidden_sizes) + [reward_dim], activation)
-#
-#     def _distribution(self, obs):
-#         logits = self.logits_net(obs)
-#         return Categorical(logits=logits)
-#
-#     def _log_prob_from_distribution(self, pi, con):
-#         return pi.log_prob(con)
-#
-#     def label_context(self, obs):
-#         with torch.no_grad():
-#             pi = self._distribution(obs)
-#             con = pi.sample()
-#             # print("Drawn context: ", con)
-#             # logp_con = self._log_prob_from_distribution(pi, con)
-#
-#         # return logp_con.numpy()
-#         return con
 
 class GaussianReward(nn.Module):
     def __init__(self, obs_dim, hidden_sizes, activation):
@@ -635,144 +564,8 @@ def MLP_DiagGaussianPolicy(state_dim, hidden_dims, action_dim,
 
 
 #############################################################################
-#####################################################################
-
-from torch import nn
-
-class VanillaVAE(nn.Module):
-
-    def __init__(self,
-                 in_dims: int,
-                 latent_dim: int,
-                 out_dim: int,
-                 hidden_dims: List = None, **kwargs) -> None:
-        super(VanillaVAE, self).__init__()
-
-        self.latent_dim = latent_dim
-
-        modules = []
-        if hidden_dims is None:
-            hidden_dims = [32, 64, 128, 256, 512]
-
-        # Build Encoder
-        for h_dim in hidden_dims:
-            modules.append(
-                nn.Sequential(
-                    nn.Linear(in_dims, h_dim),
-                    nn.LeakyReLU())
-            )
-            in_dims = h_dim
-
-        self.encoder = nn.Sequential(*modules)
-        # self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
-        # self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
-
-        self.fc_mu = nn.Linear(hidden_dims[-1] , latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1], latent_dim)
-
-        # Build Decoder
-        modules = []
-        # self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1])
-
-        hidden_dims.reverse()
-
-        for i in range(len(hidden_dims) - 1):
-            modules.append(
-                nn.Sequential(nn.Linear(hidden_dims[i], hidden_dims[i+1]),
-                    nn.LeakyReLU())
-            )
-
-        self.decoder = nn.Sequential(*modules)
 
 
-        self.final_layer = nn.Sequential(
-                            nn.Linear(hidden_dims[-1], hidden_dims[-1]),
-                            nn.LeakyReLU(),
-                            nn.Linear(hidden_dims[-1], out_dim),
-                            nn.Tanh())
-
-    def encode(self, input: Tensor) -> List[Tensor]:
-
-        result = self.encoder(input)
-        result = torch.flatten(result)
-
-        # Split the result into mu and var components of the latent Gaussian distribution
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
-
-        return [mu, log_var]
-
-    def decode(self, z: Tensor) -> Tensor:
-        """
-        Maps the given latent codes onto out space.
-        :param z: (Tensor) [B x D]
-        :return: (Tensor)
-        """
-        print("Latent Codes: ", z)
-        result = self.decoder_input(z)
-        # print("decoder input result: ", result)
-        # result = result.view(-1, 512, 2, 2)
-        result = self.decoder(result)
-        result = self.final_layer(result)
-        return result
-
-    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
-
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return eps * std + mu
-
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
-        mu, log_var = self.encode(input)
-        z = self.reparameterize(mu, log_var)
-        return  [self.decode(z), input, mu, log_var]
-
-    def loss_function(self,
-                      *args,
-                      **kwargs) -> dict:
-        """
-        Computes the VAE loss function.
-        KL(N(\mu, \sigma), N(0, 1)) = \log \frac{1}{\sigma} + \frac{\sigma^2 + \mu^2}{2} - \frac{1}{2}
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        recons = args[0]
-        input = args[1]
-        mu = args[2]
-        log_var = args[3]
-
-        kld_weight = kwargs['M_N'] # Account for the minibatch samples from the dataset
-        recons_loss =F.mse_loss(recons, input)
-
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
-
-        loss = recons_loss + kld_weight * kld_loss
-        return {'loss': loss, 'Reconstruction_Loss':recons_loss, 'KLD':-kld_loss}
-
-    def sample(self,
-               num_samples:int, **kwargs) -> Tensor:
-
-        z = torch.randn(num_samples, self.latent_dim)
-
-        # z = z.to(current_device)
-
-        samples = self.decode(z)
-        return samples
-
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
-        return self.forward(x)[0]
-
-
-
-#######################################################333
-import torch
-# from torch.autograd import Variable
-import numpy as np
-import torch.nn.functional as F
-
-from torch import nn
 
 
 class Normal(object):
@@ -789,63 +582,151 @@ class Normal(object):
         self.r = r
 
 
-class VAE_Encoder(torch.nn.Module):
-    def __init__(self, D_in, H, D_out):
+class VAE_Encoder(nn.Module):
+    def __init__(self, D_in, H, D_out, latent_dim):
         super(VAE_Encoder, self).__init__()
-        self.linear1 = torch.nn.Linear(D_in, H)
-        self.linear2 = torch.nn.Linear(H, D_out)
+        self.linear1 = nn.Linear(D_in, H)
+        self.linear2 = nn.Linear(H, D_out)
+        self._latent_net = nn.Linear(D_out, latent_dim)
+
+    def _distribution(self, h_enc):
+        logits = self._latent_net(h_enc)
+        # print("logits: ", logits)
+        return OneHotCategorical(logits=logits)
+        # return Categorical(logits=logits)
+
+    def _sample_context(self, obs):
+        with torch.no_grad():
+            pi = self._distribution(obs)
+            con = pi.sample()
+
+        return con
 
     def forward(self, x):
-        x = F.relu(self.linear1(x))
-        return F.relu(self.linear2(x))
+        y = F.relu(self.linear1(x))
+        z = F.relu(self.linear2(y))
+        c = self._sample_context(z)
+        concat_state = torch.cat([x, c], dim=1)
+
+        return concat_state
 
 
-class VAE_Decoder(torch.nn.Module):
+class VAE_Decoder(nn.Module):
     def __init__(self, D_in, H, D_out):
         super(VAE_Decoder, self).__init__()
-        self.linear1 = torch.nn.Linear(D_in, H)
-        self.linear2 = torch.nn.Linear(H, D_out)
+
+        # print("D IN: ", D_in)
+        self.linear1 = nn.Linear(D_in, H)
+        self.linear2 = nn.Linear(H, D_out)
 
     def forward(self, x):
         x = F.relu(self.linear1(x))
         return F.relu(self.linear2(x))
+
 
 
 class VAELOR(torch.nn.Module):
-    latent_dim = 8
+    # latent_dim = 8
 
-    def __init__(self, input_dim, latent_dim):
+    def __init__(self, obs_dim, latent_dim):
         super(VAELOR, self).__init__()
-        encoder = VAE_Encoder(input_dim, 100, 100)
-        decoder = VAE_Decoder(latent_dim, 100, input_dim)
+        encoder = VAE_Encoder(obs_dim, 100, 100, latent_dim)
+        decoder = VAE_Decoder(obs_dim + latent_dim, 100, obs_dim)
+
         self.encoder = encoder
+        # self.latent_net = LatentLabeler(100, [200], latent_dim, activation=nn.LeakyReLU)
         self.decoder = decoder
 
-        self._enc_mu = torch.nn.Linear(100, latent_dim)
-        self._enc_log_sigma = torch.nn.Linear(100, latent_dim)
+        # self._enc_mu = nn.Linear(100, latent_dim)
+        # self._enc_log_sigma = nn.Linear(100, latent_dim)
 
-    def _sample_latent(self, h_enc):
-        """
-        Return the latent normal sample z ~ N(mu, sigma^2)
-        """
-        mu = self._enc_mu(h_enc)
-        log_sigma = self._enc_log_sigma(h_enc)
-        sigma = torch.exp(log_sigma)
-        std_z = torch.from_numpy(np.random.normal(0, 1, size=sigma.size())).float()
+    # def _sample_latent(self, h_enc):
+    #     """
+    #     Return the latent normal sample z ~ N(mu, sigma^2)
+    #     """
+    #     mu = self._enc_mu(h_enc)
+    #     log_sigma = self._enc_log_sigma(h_enc)
+    #
+    #     sigma = torch.exp(log_sigma)
+    #     std_z = torch.from_numpy(np.random.normal(0, 1, size=sigma.size())).float()
+    #
+    #     self.z_mean = mu
+    #     self.z_sigma = sigma
+    #
+    #     # print("reparametrization trick: ", mu + sigma * std_z)
+    #     return mu + sigma * std_z  # Reparameterization trick
 
-        self.z_mean = mu
-        self.z_sigma = sigma
 
-        # print("reparametrization trick: ", mu + sigma * std_z)
-        return mu + sigma * std_z  # Reparameterization trick
 
     def forward(self, state):
-        h_enc = self.encoder(state)
-        z = self._sample_latent(h_enc)
-        return self.decoder(z)
+        # h_enc = self.encoder(state)
+        # z = self._sample_latent(h_enc)
+        # c = self._sample_context(h_enc)
+        # concat_state = torch.cat([state, c], dim=1)
+        # print("concatenated state shape: ", concat_state.shape )
+        # print("context label: ", c)
+        # print("context label dtype:", type(z))
+        # return self.decoder(z)
+        state_enc = self.encoder(state)
+
+        # print("Encoded state: ", state_enc.shape)
+        return self.decoder(state_enc)
 
 
 def latent_loss(z_mean, z_stddev):
     mean_sq = z_mean * z_mean
     stddev_sq = z_stddev * z_stddev
     return 0.5 * torch.mean(mean_sq + stddev_sq - torch.log(stddev_sq) - 1)
+
+
+
+
+
+
+
+
+
+class MLPContextLabeler(Actor):
+
+    # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
+    def __init__(self, input_dim, context_dim, hidden_sizes, activation):
+        super().__init__()
+
+        # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
+        # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
+        # self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [context_dim], activation)
+
+        self.logits_net = mlp([input_dim] + list(hidden_sizes) + [context_dim], activation)
+
+    def _distribution(self, obs):
+        logits = self.logits_net(obs)
+        return Categorical(logits=logits)
+
+
+    def _log_prob_from_distribution(self, pi, con):
+        return pi.log_prob(con)
+
+    def label_context(self, obs):
+        with torch.no_grad():
+            pi = self._distribution(obs)
+            con = pi.sample()
+            # print("Drawn context: ", con)
+            # logp_con = self._log_prob_from_distribution(pi, con)
+
+        # return logp_con.numpy()
+        return con
+
+
+
+
+# class LatentLabeler(nn.Module):
+#
+#     def __init__(self, in_dim, hidden_sizes, latent_dim, activation):
+#         super().__init__()
+#
+#         self.l_net = mlp([in_dim] + list(hidden_sizes) + [latent_dim], activation)
+#
+#     def forward(self, obs):
+#         return torch.squeeze(self.l_net(obs), -1)  # Critical to ensure v has right shape.
+
+
