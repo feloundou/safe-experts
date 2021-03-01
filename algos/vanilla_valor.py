@@ -136,11 +136,15 @@ def vanilla_valor(env_fn,
             for st in range(step_batch_size):
                 s_diff = expert_states[st + 1] - expert_states[st]
                 a = expert_actions[st]
+                print("collected action: ", a)
 
                 if s_diff_data is None:
                     s_diff_data = torch.Tensor(s_diff).unsqueeze(0)
+                    a_data = torch.Tensor(a).unsqueeze(0)
+
                 else:
                     s_diff_data = torch.cat([torch.Tensor(s_diff_data), torch.Tensor(s_diff.unsqueeze(0))])
+                    a_data = torch.cat([torch.Tensor(a_data), torch.Tensor(a).unsqueeze(0)])
 
                 # print("collecting some data", s_diff_data.shape)
 
@@ -151,27 +155,24 @@ def vanilla_valor(env_fn,
                 # # Attach it to generated one-hot vector
                 # concat_obs = torch.cat([torch.Tensor(s_diff), c_onehot])
 
-            # test_vae_output = valor_vae(s_diff)
 
-            # Train the VAE encoder and decoders
-            train_encoder_iters = train_decoder_iters = 5
+            # Train the VAE encoder and decoder
+            train_encoder_iters = train_decoder_iters = 100
 
             for _ in range(train_encoder_iters):
                 vae_optimizer.zero_grad()
-                dec = valor_vae(s_diff_data)
-                # print("Decoded Values: ", dec)
+
+                # dec = valor_vae(s_diff_data)
+                # print("Decoded Values: ", dec) #Evaluate
                 # print("decoder shape: ", dec.shape)
                 # ll = latent_loss(valor_vae.z_mean, valor_vae.z_sigma)
-
                 # loss = vae_criterion(dec, s_diff_data) + ll
-                enc_loss = vae_criterion(dec, s_diff_data)
-
-                # print("Latent Loss: ", ll)
-                # print("VAE Loss: ", vae_criterion(dec, s_diff_data))
-                enc_loss.backward()
+                # enc_loss = vae_criterion(dec, s_diff_data)
+                loss, recon_loss, kl_loss, _ = valor_vae.compute_latent_loss(s_diff_data, a_data)
+                loss.backward()
                 vae_optimizer.step()
                 # print("Loss Data: ", loss.data)
-                enc_l = enc_loss.data.item()
+                enc_l = loss.data.item()
                 ep_len += 1
 
             # for _ in range(train_encoder_iters):

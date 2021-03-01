@@ -117,6 +117,7 @@ def run_policy(env, get_action, max_ep_len=None, num_episodes=100, render=True, 
             time.sleep(1e-3)
 
         a = get_action(o)
+        # print("action taken: ", a)
         next_o, r, d, info = env.step(a)
 
         if record:

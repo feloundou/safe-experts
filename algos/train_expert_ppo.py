@@ -271,6 +271,8 @@ def ppo(env_fn,
 
             a, v, vc, logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
 
+            print("action taken: ", a)
+
             # env.step => Take action
             next_o, r, d, info = env.step(a)
 

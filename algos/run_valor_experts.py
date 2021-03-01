@@ -41,10 +41,10 @@ rose_expert = Expert(config_name='rose',
                 ac_kwargs=dict(hidden_sizes=[128] * 4), seed=0)
 
 # Get pre-saved trajectories
-# cyan
-cyan_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
-cyan_rb = cyan_expert.replay_buffer
-cyan_memory = cyan_expert.memory
+# # cyan
+# cyan_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
+# cyan_rb = cyan_expert.replay_buffer
+# cyan_memory = cyan_expert.memory
 
 # marigold
 marigold_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
@@ -153,7 +153,7 @@ vanilla_valor(lambda: gym.make(ENV_NAME),
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            # epochs=100,
-           epochs=500,
+           epochs=100,
            logger_kwargs=logger_kwargs, splitN=ep_len_config-1,
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
