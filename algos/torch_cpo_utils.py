@@ -17,7 +17,7 @@ import safety_gym
 import numpy as np
 import time
 
-from buffer_torch import *
+from buffer_torch import Trajectory, Buffer
 
 # DEFAULT_DATA_DIR = osp.join(osp.abspath(osp.dirname(osp.dirname(__file__))),'data')
 
@@ -459,9 +459,6 @@ class SinglePathSimulator:
                         time.sleep(1e-5)
 
                     obs, reward, trajectory.done, info = env.step(action.numpy())
-                    # print("reward from action: ", reward)
-                    # print("info: ", info)
-                    # print("info: ", info)
 
                     obs = torch.tensor(obs).float()
                     reward = torch.tensor(reward, dtype=torch.float)
@@ -511,6 +508,7 @@ class ExpertSinglePathSimulator:
                     obs = self.obs_filter(obs)
 
                 trajectory.observations.append(obs)
+                old_obs=obs
 
             while np.any(continue_mask):
                 continue_indices = np.where(continue_mask)
@@ -540,6 +538,8 @@ class ExpertSinglePathSimulator:
                     cost = torch.tensor(info['cost_hazards'], dtype=torch.float)
                     # print("costs: ", cost)
 
+                    # print("next obs traj", trajectory.next_observations)
+
                     if self.obs_filter:
                         obs = self.obs_filter(obs)
 
@@ -547,8 +547,14 @@ class ExpertSinglePathSimulator:
                     trajectory.rewards.append(reward)
                     trajectory.costs.append(cost)
 
+                    new_obs = obs
+
+                    obs_diff = new_obs - old_obs
+
                     if not trajectory.done:
                         trajectory.observations.append(obs)
+                        trajectory.next_observations.append(new_obs)
+                        trajectory.obs_diff.append(obs_diff)
 
                 continue_mask = np.asarray([1 - trajectory.done for trajectory in trajectories])
 

@@ -568,36 +568,18 @@ def MLP_DiagGaussianPolicy(state_dim, hidden_dims, action_dim,
 
 
 
-# class Normal(object):
-#     def __init__(self, mu, sigma, log_sigma, v=None, r=None):
-#         self.mu = mu
-#         self.sigma = sigma  # either stdev diagonal itself, or stdev diagonal from decomposition
-#         self.logsigma = log_sigma
-#         dim = mu.get_shape()
-#         if v is None:
-#             v = torch.FloatTensor(*dim)
-#         if r is None:
-#             r = torch.FloatTensor(*dim)
-#         self.v = v
-#         self.r = r
-
 
 class VAE_Encoder(nn.Module):
     def __init__(self, D_in, H, D_out):
         super(VAE_Encoder, self).__init__()
         self.linear1 = nn.Linear(D_in, H)
         self.linear2 = nn.Linear(H, D_out)
-        # self._latent_net = nn.Linear(D_out, latent_dim)
 
     def forward(self, x):
         y = F.relu(self.linear1(x))
         z = F.relu(self.linear2(y))
-        # c = self._sample_context(z)
-        # concat_state = torch.cat([x, c], dim=1)
 
         return z
-
-
 
 
 class VAE_Decoder(nn.Module):
@@ -605,37 +587,15 @@ class VAE_Decoder(nn.Module):
         super(VAE_Decoder, self).__init__()
 
         act_dim = 2
-        obs_dim = D_in
-        obs_dim_aug = obs_dim + 2
         hidden_sizes = [128]*4
         activation = nn.Tanh
 
-        # print("D IN: ", D_in)
         self.linear1 = nn.Linear(D_in, H)
         self.linear2 = nn.Linear(H, D_out)
-
-        # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
-        # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        # self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
         self.shared_net = mlp([D_in] + list(hidden_sizes), activation)
         self.mu_net = nn.Linear(hidden_sizes[-1], act_dim)
         self.var_net = nn.Linear(hidden_sizes[-1], act_dim)
-
-    def _distribution(self, obs):
-        mu = self.mu_net(obs)
-        std = torch.exp(self.log_std)
-        return Normal(mu, std)
-
-    def act(self, obs):
-        with torch.no_grad():
-            pi = self._distribution(obs)
-            # print("PI is", pi)
-            a = pi.sample()
-        return a
-
-    # def forward(self, x):
-    #     return self.act(x)
 
     def forward(self, x):
         out = F.leaky_relu(self.shared_net(x))
@@ -643,8 +603,6 @@ class VAE_Decoder(nn.Module):
         std = self.var_net(out)
         return Normal(loc=mu, scale=std).rsample()
 
-        # x = F.relu(self.linear1(x))
-        # return F.relu(self.linear2(x))
 
 
 class VAELOR(torch.nn.Module):
@@ -652,34 +610,22 @@ class VAELOR(torch.nn.Module):
         super(VAELOR, self).__init__()
 
         act_dim = 2
-
         self.encoder = VAE_Encoder(obs_dim, 100, 100)
         self.lmbd = Lambda(hidden_size=100, latent_length=latent_dim)
         self.decoder = VAE_Decoder(100 + latent_dim, 100, act_dim)
 
 
     def forward(self, state):
-        # h_enc = self.encoder(state)
-        # z = self._sample_latent(h_enc)
-        # c = self._sample_context(h_enc)
-
-        # print("context label: ", c)
-        # print("context label dtype:", type(z))
-        # return self.decoder(z)
         state_enc = self.encoder(state)
         latent_v = self.lmbd(state_enc)
-        print("latent VAR: ", latent_v)  #TODO: fix this to onehot
+
+        # print("latent v is this:", latent_v)
 
         concat_state = torch.cat([state_enc, latent_v], dim=1)
         act_decoder = self.decoder(concat_state)
 
         return act_decoder, latent_v
 
-    def _sample_context(self, obs):
-        with torch.no_grad():
-            pi = self._distribution(obs)
-            con = pi.sample()
-        return con
 
     def _rec(self, x_decoded, x, loss_fn):
         """
@@ -691,11 +637,19 @@ class VAELOR(torch.nn.Module):
         """
         latent_mean, latent_logvar = self.lmbd.latent_mean, self.lmbd.latent_logvar
 
+        context_loss = -self.lmbd._dist.log_prob(self.lmbd._context_sample)
+                       # * reward
+
         kl_loss = -0.5 * torch.mean(1 + latent_logvar - latent_mean.pow(2) - latent_logvar.exp())
         recon_loss = loss_fn(x_decoded, x)
 
-        return kl_loss + recon_loss, recon_loss, kl_loss
-        # return kl_loss*recon_loss, recon_loss, kl_loss
+        # print("context loss: ", context_loss.sum())
+        # print("recon_loss: ", recon_loss)
+        # print("kl loss: ", kl_loss)
+
+        # return kl_loss + recon_loss, recon_loss, kl_loss
+        return context_loss.sum() + recon_loss, recon_loss, context_loss.sum()
+
 
     def compute_latent_loss(self, X, A):
         """
@@ -714,16 +668,13 @@ class VAELOR(torch.nn.Module):
         elif loss_function == 'MSELoss':
             loss_fn = nn.MSELoss(size_average=False)
 
-        x_decoded, _ = self(X)
-        print("decoded latent space ", x_decoded)
-        print("action data", A)
+        x_decoded, latent_labels = self(X)
+        # print("decoded latent space ", x_decoded)
+        # print("action data", A)
 
         loss, recon_loss, kl_loss = self._rec(x_decoded, A, loss_fn)
 
-        print("recon_loss: ", recon_loss)
-        print("kl loss: ", kl_loss)
-
-        return loss, recon_loss, kl_loss, X
+        return loss, recon_loss, kl_loss, X, latent_labels
 
 
 
@@ -761,18 +712,22 @@ class Lambda(nn.Module):
             eps = torch.randn_like(std)
 
             logits = self._latent_net(cell_output)
-            print("logits: ", logits)
-            one_hot= OneHotCategorical(logits=logits)
-            print("one hot", one_hot.sample())
+            context_distribution= OneHotCategorical(logits=logits)  #TODO: check if this should be probs
 
-            new_formula = Normal(loc=self.latent_mean, scale=std).rsample()
-            old_formula = eps.mul(std).add_(self.latent_mean)
-            third_formula = one_hot.sample()
-            print("new trial: ", new_formula)
-            print("old trial: ", old_formula)
-            # return Normal(loc=self.latent_mean, scale=std).rsample()
-            # return eps.mul(std).add_(self.latent_mean)
-            return third_formula
+            self._dist = context_distribution
+
+            #### TODO: IMPORTANT. What we want is maximize log_prob(c|s'-s).
+            #### TODO: Given the state distribution, the log probability of context label
+            # Done
+
+            measure1 = Normal(loc=self.latent_mean, scale=std).rsample()
+            measure2 = eps.mul(std).add_(self.latent_mean)
+            measure3 = context_distribution.sample()
+
+            self._context_sample = measure3
+
+
+            return measure3
         else:
             return self.latent_mean
 
