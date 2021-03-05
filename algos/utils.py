@@ -1509,3 +1509,52 @@ class PureVALORBuffer(object):
 # AgglomerativeClustering()
 # print(clustering.labels_)
 # array([1, 1, 1, 0, 0, 0])
+
+
+class MemoryBatch:
+    def __init__(self, memories):
+        super(MemoryBatch, self).__init__()
+        self.idx = 0
+        self.memories = memories
+        self.size = len(memories)
+        self.transition_states = None
+        self.transition_actions = None
+        self.pure_expert_states = None
+
+
+    def collate(self):
+        for k in range(self.size):
+            expert_states, expert_actions, _, _, expert_next_states, _ = self.memories[k].sample(next=True)
+
+            # Exclude the last step of each episode to calculate state differences
+            t_states = torch.stack(
+                [expert_next_states[i] - expert_states[i] for episode in self.memories[k] for i in
+                 range(len(episode) - 1)])
+            t_actions = torch.stack(
+                [expert_actions[i] for episode in self.memories[k] for i in range(len(episode) - 1)])
+
+            # Three basic checks
+            assert t_states.shape[0] == t_actions.shape[
+                0], "Tensors for state transitions and actions should be same on dim 0"
+            assert torch.equal(expert_next_states[0],
+                               expert_states[1]), "The i+1 state tensors should match the i next_state tensors"
+            assert torch.equal(expert_states[1] - expert_states[0],
+                               t_states[0]), "Check your transition calculations"
+
+            if self.transition_states is None:
+                self.transition_states, self.transition_actions = t_states, t_actions
+                self.expert_ids = torch.empty(self.transition_states.shape[0]).fill_(self.idx)
+                self.pure_expert_states = expert_states
+
+            else:
+                self.transition_states = torch.cat([self.transition_states, t_states])
+                self.transition_actions = torch.cat([self.transition_actions, t_actions])
+                self.pure_expert_states = torch.cat([self.pure_expert_states, expert_states])
+
+                e_ids = torch.empty(self.transition_states.shape[0]).fill_(self.idx)
+                self.expert_ids = torch.cat([self.expert_ids, e_ids])
+
+
+            self.idx += 1
+
+        return self.transition_states, self.pure_expert_states, self.transition_actions, self.expert_ids

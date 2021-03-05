@@ -47,30 +47,30 @@ rose_expert = Expert(config_name='rose',
 # cyan_memory = cyan_expert.memory
 
 # marigold
-marigold_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=3, replay_buffer_size=10000)
+marigold_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
 marigold_rb = marigold_expert.replay_buffer
 marigold_memory = marigold_expert.memory
 
 # rose
-rose_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=3, replay_buffer_size=10000)
+rose_expert.run_expert_sim(env=env, get_from_file=True, expert_episodes=10, replay_buffer_size=10000)
 rose_rb = rose_expert.replay_buffer
 rose_memory = rose_expert.memory
 
-# print("replay buffers fetched")
+print("replay buffers fetched")
 
 # # Run simulation to collect demonstrations (just a gut-check here)
-# marigold_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=3,
+# marigold_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=15,
 #                                replay_buffer_size=10000)
 # marigold_rb = marigold_expert.replay_buffer
 # marigold_memory = marigold_expert.memory
-#
-# rose_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=3,
+
+# rose_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=15,
 #                                replay_buffer_size=10000)
 # rose_rb = rose_expert.replay_buffer
 # rose_memory = rose_expert.memory
 
-#
-# cyan_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=3,
+
+# cyan_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=15,
 #                                replay_buffer_size=10000)
 # cyan_rb = cyan_expert.replay_buffer
 # cyan_memory = cyan_expert.memory
@@ -147,16 +147,15 @@ logger_kwargs = setup_logger_kwargs('vanilla-valor-expts', 0)
 
 vanilla_valor(lambda: gym.make(ENV_NAME),
            dc_kwargs=dict(hidden_dims=[128] * 4),
-           ac_kwargs=dict(hidden_sizes=[128] * 4),
+           # ac_kwargs=dict(hidden_sizes=[128] * 4),
            seed=444,
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
-           # epochs=100,
-           epochs=500,
-           train_batch_size = 20,
-           eval_batch_size=20,
+           epochs=100,
+           train_batch_size=100,
+           eval_batch_size=100,
+           train_valor_iters=200,
            logger_kwargs=logger_kwargs,
-              # splitN=ep_len_config-1,
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
 
