@@ -89,7 +89,6 @@ def vanilla_valor(env_fn,
     vae_optimizer = Adam(valor_vae.parameters(), lr=vae_lr)
     discrim_optimizer = Adam(vae_discrim.parameters(), lr=vae_lr)
 
-
     start_time = time.time()
 
     # Prepare data
@@ -100,15 +99,15 @@ def vanilla_valor(env_fn,
 
     # context_dist = OneHotCategorical(logits=torch.Tensor(np.ones(2)))
     context_dist = Categorical(logits=torch.Tensor(np.ones(2)))
-    # print("context dist: ", context_dist)
 
 
 # Main Loop
     for epoch in range(epochs):
         c = context_dist.sample()
-        print("context sample: ", c)
         c_onehot = F.one_hot(c, con_dim).squeeze().float()
-        print("c onehot", c_onehot)
+
+        o_tensor = context_dist.sample_n(train_batch_size)
+        o_onehot = F.one_hot(o_tensor, con_dim).squeeze().float()
 
         # Select state transitions and actions at random indexes
         batch_indexes = torch.randint(len(transition_states), (train_batch_size,))
@@ -122,23 +121,13 @@ def vanilla_valor(env_fn,
             loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
                                                                                  actions_batch, c_onehot, 'MSELoss')
 
-            # ####
-            # discrim_optimizer.zero_grad()
-            # _, logp_dc, _ = vae_discrim(delta_states_batch, c_onehot)
-            # d_loss = -logp_dc.mean()  # Tyna remove the mean and give per time step reward
-            # discrim_optimizer.zero_grad()
-            # d_loss.backward()
-            # mpi_avg_grads(vae_discrim.pi)
-            # discrim_optimizer.step()
+            # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
+            #                                                                      actions_batch, o_onehot, 'MSELoss')
 
-            # print("LogP DC: ", logp_dc)
-            # print("D Loss: ", d_loss)
-            ###
             loss.backward()
             vae_optimizer.step()
             valor_l = loss.data.item()
 
-        # vaelor_metrics = {"Loss: ", d_loss}
 
         valor_l_new, recon_l_new, context_l_new = valor_l, recon_loss.data.item(), context_loss.data.item()
 
