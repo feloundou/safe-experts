@@ -10,6 +10,7 @@ from pure_valor import pure_valor
 from steer_valor import steer_valor
 from value_valor import value_valor
 from vanilla_valor import vanilla_valor
+from modified_valor import valor_mod
 
 from neural_nets import ValorDiscriminator
 from utils import setup_logger_kwargs
@@ -142,7 +143,7 @@ ep_len_config = 1000
 #            replay_buffers=[marigold_rb, rose_rb],
 #            memories=[marigold_memory, rose_memory])
 
-
+#
 logger_kwargs = setup_logger_kwargs('vanilla-valor-expts', 0)
 
 vanilla_valor(lambda: gym.make(ENV_NAME),
@@ -151,13 +152,31 @@ vanilla_valor(lambda: gym.make(ENV_NAME),
            seed=444,
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
-           epochs=100,
+           epochs=1000,
            train_batch_size=100,
            eval_batch_size=100,
-           train_valor_iters=200,
+           train_valor_iters=50,
            logger_kwargs=logger_kwargs,
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
+
+#
+# #######
+#
+#
+# logger_kwargs = setup_logger_kwargs('mod-valor-expts', 0)
+#
+# valor_mod(lambda: gym.make(ENV_NAME),
+#            dc_kwargs=dict(hidden_dims=[128] * 4),
+#            seed=444,
+#            episodes_per_epoch=10,   # fix reward accumulation
+#            max_ep_len=ep_len_config,
+#            epochs=200,
+#            train_batch_size=100,
+#            eval_batch_size=100,
+#            train_valor_iters=100,
+#            logger_kwargs=logger_kwargs,
+#            memories=[marigold_memory, rose_memory])
 
 
 

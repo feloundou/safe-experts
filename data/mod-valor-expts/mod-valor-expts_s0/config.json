@@ -1,0 +1,68 @@
+{
+    "ac_kwargs":	{},
+    "actor_critic":	"ActorCritic",
+    "clip_ratio":	0.2,
+    "composite_name":	"new_valor_penalized_standard",
+    "con_dim":	2,
+    "config_name":	"standard",
+    "dc_kwargs":	{
+        "hidden_dims":	[
+            128,
+            128,
+            128,
+            128
+        ]
+    },
+    "dc_lr":	0.0005,
+    "disc":	"ModValorDiscriminator",
+    "env_fn":	"<function <lambda> at 0x7f54bbcd9e50>",
+    "episodes_per_epoch":	10,
+    "epochs":	200,
+    "eval_batch_size":	100,
+    "exp_name":	"mod-valor-expts",
+    "k":	1,
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f54c3139820>":	{
+            "epoch_dict":	{},
+            "exp_name":	"mod-valor-expts",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/mod-valor-expts/mod-valor-expts_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/mod-valor-expts/mod-valor-expts_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"mod-valor-expts",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/mod-valor-expts/mod-valor-expts_s0"
+    },
+    "max_ep_len":	1000,
+    "memories":	[
+        {
+            "<buffer_torch.Buffer object at 0x7f54bbc27730>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f54bbc27760>\n <buffer_torch.Trajectory object at 0x7f549e8a56a0>\n <buffer_torch.Trajectory object at 0x7f549e404d90>\n <buffer_torch.Trajectory object at 0x7f549deef4c0>\n <buffer_torch.Trajectory object at 0x7f549da44bb0>\n <buffer_torch.Trajectory object at 0x7f549d52d0a0>\n <buffer_torch.Trajectory object at 0x7f549d0229d0>\n <buffer_torch.Trajectory object at 0x7f549cb8c040>\n <buffer_torch.Trajectory object at 0x7f549c27e7f0>\n <buffer_torch.Trajectory object at 0x7f549bd6f0a0>]"
+            }
+        },
+        {
+            "<buffer_torch.Buffer object at 0x7f54bbc274f0>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f54bbc275e0>\n <buffer_torch.Trajectory object at 0x7f549d3458e0>\n <buffer_torch.Trajectory object at 0x7f549e6f90d0>\n <buffer_torch.Trajectory object at 0x7f549e8a1700>\n <buffer_torch.Trajectory object at 0x7f549bc4fdf0>\n <buffer_torch.Trajectory object at 0x7f549dbc5520>\n <buffer_torch.Trajectory object at 0x7f549d155c10>\n <buffer_torch.Trajectory object at 0x7f549cda6340>\n <buffer_torch.Trajectory object at 0x7f549f190a30>\n <buffer_torch.Trajectory object at 0x7f549c4f32e0>]"
+            }
+        }
+    ],
+    "penalty_init":	1.0,
+    "penalty_lr":	0.005,
+    "pi_lr":	0.0003,
+    "save_freq":	10,
+    "seed":	444,
+    "train_batch_size":	200,
+    "train_dc_interv":	1,
+    "train_dc_iters":	100,
+    "train_pi_iters":	1,
+    "train_v_iters":	80,
+    "train_valor_iters":	100,
+    "vf_lr":	0.001
+}

@@ -471,6 +471,48 @@ class ValorDiscriminator(nn.Module):
 
 
 
+
+class ModValorFFNNPolicy(nn.Module):
+    def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
+        super(ModValorFFNNPolicy, self).__init__()
+
+        self.context_net = mlp([input_dim] + list(hidden_dims) + [con_dim], activation)
+
+
+    def forward(self, seq, gt=None):
+
+        logit_seq = self.context_net(seq)
+        self.logits = torch.mean(logit_seq, dim=1)
+        policy = Categorical(logits=self.logits)
+        label = policy.sample()
+        print("LABEL: ", label)
+        logp = policy.log_prob(label).squeeze()
+
+        if gt is not None:
+            loggt = policy.log_prob(gt).squeeze()
+        else:
+            loggt = None
+
+            return label, loggt, logp
+
+
+
+
+class ModValorDiscriminator(nn.Module):
+    def __init__(self, input_dim, context_dim, activation=nn.Softmax,
+                 output_activation=nn.Softmax, hidden_dims=64):
+
+        super(ModValorDiscriminator, self).__init__()
+        self.context_dim = context_dim
+
+        self.pi = ModValorFFNNPolicy(input_dim, hidden_dims, activation=nn.Tanh,
+                                  output_activation=nn.Tanh, con_dim=self.context_dim)
+
+    def forward(self, seq, gt=None):
+            pred, loggt, logp = self.pi(seq, gt)
+            return pred, loggt, logp
+
+
 class DiagGaussianLayer(nn.Module):
     '''
     Implements a layer that outputs a Gaussian distribution with a diagonal
@@ -771,7 +813,7 @@ class VAELOR(torch.nn.Module):
 
         link_layer = 400
         self.encoder = VAE_Encoder(obs_dim, 100, link_layer)
-        self.lmbd = Lambda(hidden_size=link_layer, latent_length=latent_dim)
+        self.lmbd = Lambda(input_dim=link_layer, latent_length=latent_dim)
         self.decoder = VAE_Decoder(obs_dim + latent_dim, 100, act_dim)
 
 
@@ -785,7 +827,6 @@ class VAELOR(torch.nn.Module):
         # policy = Categorical(logits=self.logits)
         # label = policy.sample()
         # logp = policy.log_prob(label).squeeze()
-
         # print("NEW LABEL: ", label)
         # print("Log p: ", logp)
 
@@ -794,6 +835,13 @@ class VAELOR(torch.nn.Module):
         delta_state_enc = self.encoder(delta_state)
         latent_v = self.lmbd(delta_state_enc)
 
+        ##
+        # logit_seq = self.context_net(seq)
+        new_logits = torch.mean(latent_v, dim=1)
+        policy = Categorical(logits=new_logits)
+        label = policy.sample()
+        # print("NEW LABEL: ", label)
+        ##
 
         concat_state = torch.cat([state, latent_v], dim=1)
         act_decoder = self.decoder(concat_state)
@@ -802,14 +850,14 @@ class VAELOR(torch.nn.Module):
 
 
 
-    def compute_latent_loss(self, X, Delta_X, A, context_sample):
+    def compute_latent_loss(self, X, Delta_X, A, context_sample, loss_function):
         """
         Given input tensor, forward propagate, compute the loss, and backward propagate.
         Represents the lifecycle of a single iteration
         :param X: Input tensor
         :return: total loss, reconstruction loss, kl-divergence loss and original input
         """
-        loss_function = 'MSELoss'
+        # loss_function = 'MSELoss'
         if loss_function == 'SmoothL1Loss':
             loss_fn = nn.SmoothL1Loss(size_average=False)
 
@@ -817,9 +865,17 @@ class VAELOR(torch.nn.Module):
             loss_fn = nn.MSELoss(size_average=False)
 
         decoded_action, latent_labels = self(X, Delta_X)
+
+        # get latent labels for checking accuracy
+        # print("lat lab", latent_labels)
         # loss, recon_loss, context_loss = self._rec(decoded_action, A, loss_fn, context_sample)
         # context_loss = -self.lmbd._dist.log_prob(self.lmbd._context_sample)
-        context_loss = -self.lmbd._dist.log_prob(context_sample)
+
+
+        # context_loss = -self.lmbd._dist.log_prob(context_sample) # option 1
+        context_loss = -self.lmbd._dist.log_prob(latent_labels)  # option 2
+        # print("context loss is: ", context_loss)
+        # print("interm context loss: ", context_loss)
 
         context_loss = context_loss.sum()
 
@@ -827,7 +883,6 @@ class VAELOR(torch.nn.Module):
         # policy = Categorical(logits=test_logits)
         expanded_sample = context_sample.expand(100, context_sample.shape[0])
         # Testing
-        #
         # loggt_dc_loss = policy.log_prob(expanded_sample)
         # context_loss = loggt_dc_loss.sum()   ## TODO: Verify this
 
@@ -846,9 +901,18 @@ class Lambda(nn.Module):
     :param hidden_size: hidden size of the encoder
     :param latent_length: latent vector length
     """
-    def __init__(self, hidden_size, latent_length):
+    def __init__(self, input_dim, latent_length):
         super(Lambda, self).__init__()
-        self._latent_net = nn.Linear(hidden_size, latent_length)
+
+        self._latent_net = nn.Linear(input_dim, latent_length)
+        hidden_sizes = [500]
+
+        self._latent_1 = nn.Linear(input_dim, 500)
+        self._latent_2 = nn.Linear(500, latent_length)
+
+        # self._latent_net = mlp([input_dim] + list(hidden_sizes) + [latent_length], activation=nn.ReLU)
+        # self._latent_net = mlp([input_dim] + list(hidden_sizes) + [latent_length], activation=nn.Sigmoid)
+        # self._latent_net = mlp([input_dim] + list(hidden_sizes) + [latent_length], activation=nn.Tanh)
 
         # def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
         #     super(XValorFFNNPolicy, self).__init__()
@@ -861,44 +925,19 @@ class Lambda(nn.Module):
         :param cell_output: last hidden state of encoder
         :return: latent vector
         """
-        self.logits = self._latent_net(cell_output)
+        self.logits = self._latent_net(cell_output) ## TODO: original setup. Try later??
 
-        # print("old logits: ", self.logits)
+        # self.logits = self._latent_2(self._latent_1(cell_output))
+        # new_logits = torch.mean(self.logits, dim=0)
 
-        new_logits = torch.mean(self.logits, dim=1)
+        self._dist = OneHotCategorical(logits=self.logits)
         # print("new logits: ", new_logits)
-
-        self._dist = OneHotCategorical(logits=self.logits)  # TODO: check if this should be probs
         # self._dist = OneHotCategorical(logits=new_logits)  # TODO: check if this should be probs
         self._context_sample = self._dist.sample()
-
-
 
         return self._context_sample
 
 
-
-class XValorFFNNPolicy(nn.Module):
-    def __init__(self, input_dim, hidden_dims, activation, output_activation, con_dim):
-        super(XValorFFNNPolicy, self).__init__()
-
-        self.context_net = mlp([input_dim] + list(hidden_dims), activation)
-        self.linear = nn.Linear(hidden_dims[-1], con_dim)
-
-    def forward(self, seq, gt=None):
-        inter_states = self.context_net(seq)
-        logit_seq = self.linear(inter_states)
-        self.logits = torch.mean(logit_seq, dim=1)
-        policy = Categorical(logits=self.logits)
-        label = policy.sample()
-        logp = policy.log_prob(label).squeeze()
-
-        if gt is not None:
-            loggt = policy.log_prob(gt).squeeze()
-        else:
-            loggt = None
-
-        return label, loggt, logp
 
 
 

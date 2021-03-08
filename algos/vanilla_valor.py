@@ -74,6 +74,10 @@ def vanilla_valor(env_fn,
     # Sync params across processes
     sync_params(valor_vae)
 
+    N_expert = episodes_per_epoch*1000
+
+
+
     # Buffer
     local_episodes_per_epoch = int(episodes_per_epoch / num_procs())
 
@@ -104,6 +108,7 @@ def vanilla_valor(env_fn,
         c = context_dist.sample()
         print("context sample: ", c)
         c_onehot = F.one_hot(c, con_dim).squeeze().float()
+        print("c onehot", c_onehot)
 
         # Select state transitions and actions at random indexes
         batch_indexes = torch.randint(len(transition_states), (train_batch_size,))
@@ -112,9 +117,10 @@ def vanilla_valor(env_fn,
 
         # Train the VAE encoder and decoder
         for _ in range(train_valor_iters):
+            valor_vae.train()
             vae_optimizer.zero_grad()
             loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
-                                                                                 actions_batch, c_onehot)
+                                                                                 actions_batch, c_onehot, 'MSELoss')
 
             # ####
             # discrim_optimizer.zero_grad()
@@ -162,25 +168,56 @@ def vanilla_valor(env_fn,
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
 
-    # # Run eval
-    # print("RUNNING FINAL EVAL")
-    #
-    # # randomize index, then select the
+    # Run eval
+    print("RUNNING FINAL EVAL")
+    print("Total episodes per expert: ", N_expert)
+    valor_vae.eval()
+    fake_c = context_dist.sample()
+
+    print("fake c: ", fake_c)
+    fake_c_onehot = F.one_hot(fake_c, con_dim).squeeze().float()
+    print("fake c onehot: ", fake_c_onehot)
+
+    # select a state transition, then see how it is labeled
     # batch_indexes = torch.randint(len(transition_states), (eval_batch_size,))
-    # states_eval_batch, actions_eval_batch, sampled_eval_experts = \
-    #     transition_states[batch_indexes], transition_actions[batch_indexes], expert_ids[batch_indexes]
-    #
-    # # Pass through VAELOR
-    # loss, recon_loss, kl_loss, _, latent_v = valor_vae.compute_latent_loss(states_eval_batch, actions_eval_batch)
-    #
-    # predicted_expert_labels = np.argmax(latent_v, axis=1)  # convert from one-hot
-    #
-    # ground_truth, predictions = sampled_eval_experts, predicted_expert_labels
-    #
-    # # Confusion matrix
-    # class_names = ["0", "1"]
-    # wandb.log({"confusion_mat": wplot.confusion_matrix(
-    #     y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
+    eval_batch_index = None
+
+    for i in range(len(memories)):
+        curb_factor = episodes_per_epoch
+        win_low = i*(N_expert-curb_factor)
+        win_high = (i+1)*(N_expert-curb_factor)
+
+        b_index = torch.randint(low=win_low, high=win_high, size=(eval_batch_size,))
+
+        if eval_batch_index is None:
+            eval_batch_index = b_index
+        else:
+            eval_batch_index = torch.cat([eval_batch_index, b_index])
+
+    print("some batch index! ", eval_batch_index)
+
+    # batch_index= torch.as_tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10000, 10001, 10002, 10003, 10004, 10005, 10006, 10007, 10008, 10009])  # so first expert
+    # print("old batching index! ", batch_index)
+    eval_raw_states_batch, eval_delta_states_batch, eval_actions_batch, eval_sampled_experts = \
+        pure_states[eval_batch_index], transition_states[eval_batch_index], transition_actions[eval_batch_index], expert_ids[
+            eval_batch_index]
+
+    # Pass through VAELOR
+    loss, recon_loss, kl_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
+                                                                                 eval_actions_batch, fake_c_onehot, 'MSELoss')
+
+    print("Latent V: ", latent_v)
+    predicted_expert_labels = np.argmax(latent_v, axis=1)  # convert from one-hot
+
+    ground_truth, predictions = eval_sampled_experts, predicted_expert_labels
+
+    print("ground truth", ground_truth)
+    print("predictions ", predictions)
+
+    # Confusion matrix
+    class_names = ["0", "1"]
+    wandb.log({"confusion_mat": wplot.confusion_matrix(
+        y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
 
     wandb.finish()
 
