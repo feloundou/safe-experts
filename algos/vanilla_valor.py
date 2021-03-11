@@ -146,8 +146,7 @@ def vanilla_valor(env_fn,
             min_loss = context_loss.mean().data.item()
             iter += 1
             print("Epoch: \t", epoch, "\t Iter: \t", iter, "\t Context Loss: \t", min_loss, end='\n')
-            # print('I love Python')
-            # print("Iter: \t %d, \t Context Loss: \t %d ", % (iter, min_loss))
+
             # scheduler.step()
             # print("Scheduler LR: ", scheduler.get_lr())
 

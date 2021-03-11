@@ -584,13 +584,10 @@ class OneHotCategoricalActor(Actor):
         return pi.log_prob(act)
 
 class VAE_Encoder(nn.Module):
-    def __init__(self, in_dim, hidden, out_dim):
+    def __init__(self, nx_sizes):
         super(VAE_Encoder, self).__init__()
-        # self.linear1 = nn.Linear(in_dim, hidden)
-        # self.linear2 = nn.Linear(hidden, out_dim)
-
-        hidden_sizes = [100]
-        self.logits_net = mlp([in_dim] + hidden_sizes + [out_dim], activation=nn.Tanh)
+        # hidden_sizes = [100]
+        self.logits_net = mlp(nx_sizes, activation=nn.Tanh)
 
     def forward(self, x):
         # y = F.relu(self.linear1(x))
@@ -603,22 +600,34 @@ class VAE_Encoder(nn.Module):
 
 
 class VAE_Decoder(nn.Module):
-    def __init__(self, D_in, H, D_out):
+    def __init__(self, in_dim, hidden, out_dim, activation=nn.Tanh):
         super(VAE_Decoder, self).__init__()
+        # act_dim = 2
+        # # hidden_sizes = [128]*4
+        # # activation = nn.Tanh
 
-        act_dim = 2
-        hidden_sizes = [128]*4
-        activation = nn.Tanh
-
-        ## actor
-        log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
-        self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        self.mu_net = mlp([D_in] + list(hidden_sizes) + [act_dim], activation)
-        ##
-        self.pi = MLPGaussianActor(D_in, act_dim, hidden_sizes, activation)
+        self.pi = MLPGaussianActor(in_dim, out_dim, hidden, activation)
 
     def forward(self, x):
         return self.pi._distribution(x)
+
+class Lambda(nn.Module):
+    """Lambda module converts output of encoder to latent vector
+    :param hidden_size: hidden size of the encoder
+    :param latent_length: latent vector length
+    """
+    def __init__(self, input_dim, latent_length):
+        super(Lambda, self).__init__()
+        self._latent_net = nn.Linear(input_dim, latent_length)   ## old
+
+        hidden_sizes = [500]
+        con_dim = 2
+
+        self.lambda_pi = OneHotCategoricalActor(input_dim, con_dim, hidden_sizes, activation=nn.Tanh)
+
+
+    def forward(self, cell_output):
+        return self.lambda_pi._distribution(cell_output)
 
 
 
@@ -633,10 +642,13 @@ class VAELOR(torch.nn.Module):
         :param latent_length: latent vector length
         """
         act_dim = 2
-        link_layer = 400
-        self.encoder = VAE_Encoder(obs_dim, 100, link_layer) # original
-        self.lmbd = Lambda(input_dim=link_layer, latent_length=latent_dim)
-        self.decoder = VAE_Decoder(obs_dim + latent_dim, 100, act_dim)
+        # link_layer = 400
+        encoder_sizes = [obs_dim, 100, 400]
+        decoder_hidden = [128]*4
+
+        self.encoder = VAE_Encoder(encoder_sizes) # original
+        self.lmbd = Lambda(input_dim=encoder_sizes[-1], latent_length=latent_dim)
+        self.decoder = VAE_Decoder(obs_dim + latent_dim, decoder_hidden, act_dim, activation=nn.Tanh)
 
     def forward(self, state, delta_state, action, latent_labels = None):
         delta_state_enc = self.encoder(delta_state) # original
@@ -662,14 +674,13 @@ class VAELOR(torch.nn.Module):
         """
         # decoded_action, latent_labels, logp_action = self(X, Delta_X)
         action_dist, latent_labels, latent_labels_dist = self(X, Delta_X, A)
-        sampled_action = action_dist.sample()
 
         # get latent labels for checking accuracy
-        context_loss = -latent_labels_dist.log_prob(context_sample)  # this is the correct version  ##
-        # context_loss = -latent_labels_dist.log_prob(latent_labels)
-        # recon_loss = -action_dist.log_prob(sampled_action).sum(axis=-1)
-        recon_loss = -action_dist.log_prob(A).sum(axis=-1)
+        context_loss = 0.5 -latent_labels_dist.log_prob(context_sample)  # this is the correct version  ##
+        # recon_loss = -action_dist.log_prob(A).sum(axis=-1)  ## TODO: Remove negative sign somewhere
+        recon_loss = torch.exp(action_dist.log_prob(A).sum(axis=-1))
         loss = recon_loss * context_loss          # loss = recon_loss + context_loss
+
 
         # print("Expert Action: \t", A[:2])
         # print("Learner Action: \t", sampled_action[:2])
@@ -679,41 +690,19 @@ class VAELOR(torch.nn.Module):
         return loss, recon_loss, context_loss, X, latent_labels
 
 
-class Lambda(nn.Module):
-    """Lambda module converts output of encoder to latent vector
-    :param hidden_size: hidden size of the encoder
-    :param latent_length: latent vector length
-    """
-    def __init__(self, input_dim, latent_length):
-        super(Lambda, self).__init__()
-        self._latent_net = nn.Linear(input_dim, latent_length)   ## old
-
-        hidden_sizes = [500]
-        con_dim = 2
-
-        self.lambda_pi = OneHotCategoricalActor(input_dim, con_dim, hidden_sizes, activation=nn.Tanh)
-
-
-    def forward(self, cell_output):
-        return self.lambda_pi._distribution(cell_output)
 
 
 
 
 
 
-
-
-
-
-########3
+########
 
 class MLPContextLabeler(Actor):
 
     # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
     def __init__(self, input_dim, context_dim, hidden_sizes, activation):
         super().__init__()
-
         # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
         # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
         # self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [context_dim], activation)
