@@ -1558,3 +1558,25 @@ class MemoryBatch:
             self.idx += 1
 
         return self.transition_states, self.pure_expert_states, self.transition_actions, self.expert_ids
+
+
+    def eval_batch(self, N_expert, eval_batch_size, episodes_per_epoch):
+        eval_batch_index = None
+
+        for i in range(len(self.memories)):
+            curb_factor = episodes_per_epoch
+            win_low = i * (N_expert - curb_factor)
+            win_high = (i + 1) * (N_expert - curb_factor)
+
+            b_index = torch.randint(low=win_low, high=win_high, size=(eval_batch_size,))
+
+            if eval_batch_index is None:
+                eval_batch_index = b_index
+            else:
+                eval_batch_index = torch.cat([eval_batch_index, b_index])
+
+        eval_raw_states_batch, eval_delta_states_batch, eval_actions_batch, eval_sampled_experts = \
+            self.pure_expert_states[eval_batch_index], self.transition_states[eval_batch_index], self.transition_actions[eval_batch_index], \
+            self.expert_ids[
+                eval_batch_index]
+        return eval_raw_states_batch, eval_delta_states_batch, eval_actions_batch, eval_sampled_experts

@@ -150,15 +150,40 @@ vanilla_valor(lambda: gym.make(ENV_NAME),
            dc_kwargs=dict(hidden_dims=[128] * 4),
            # ac_kwargs=dict(hidden_sizes=[128] * 4),
            seed=444,
+           # seed=123,
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            epochs=1000,
-           train_batch_size=100,
+           vae_lr=0.025,
+           # vae_lr=0.025, # optimal rate    # seems like a learning rate this high (around 0.2) is okay???
+           train_batch_size=10,
+           train_valor_iters=50,  # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
            eval_batch_size=100,
-           train_valor_iters=50,
            logger_kwargs=logger_kwargs,
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
+
+
+# It seems that doing 50 epochs is the best regime. Freezing this config for (later)
+#     vanilla_valor(lambda: gym.make(ENV_NAME),
+#                   dc_kwargs=dict(hidden_dims=[128] * 4),
+#                   # ac_kwargs=dict(hidden_sizes=[128] * 4),
+#                   seed=444,
+#                   episodes_per_epoch=10,  # fix reward accumulation
+#                   max_ep_len=ep_len_config,
+#                   epochs=50,
+#                   vae_lr=0.025,  # seems like a learning rate this high (around 0.2) is okay???
+#                   train_batch_size=10,
+#                   train_valor_iters=50,
+#                   # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
+#                   eval_batch_size=100,
+#                   logger_kwargs=logger_kwargs,
+#                   replay_buffers=[marigold_rb, rose_rb],
+#                   memories=[marigold_memory, rose_memory])
+
+# aim for context loss below 0.5
+
+## maybe training the latent sampling multiple times is what is messing it up.
 
 #
 # #######
