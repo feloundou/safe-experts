@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import wandb.plot as wplot
 from torch.optim import Adam, SGD, lr_scheduler
 
-from neural_nets import VAELOR, ValorDiscriminator
+from neural_nets import VAELOR, ValorDiscriminator, VQVAELOR, VQCriterion
 from utils import mpi_fork, proc_id, num_procs, EpochLogger, \
     setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars, MemoryBatch
 
@@ -17,6 +17,7 @@ from utils import mpi_fork, proc_id, num_procs, EpochLogger, \
 
 def vanilla_valor(env_fn,
                   vae=VAELOR,
+                  vqvae=VQVAELOR,
                   disc = ValorDiscriminator,
                   dc_kwargs=dict(),
                   seed=0,
@@ -65,8 +66,15 @@ def vanilla_valor(env_fn,
     # valor_vae = vae(obs_dim=env.observation_space.shape[0], latent_dim=con_dim, act_dim=2)
     valor_vae = vae(obs_dim=env.observation_space.shape[0], latent_dim=con_dim)
 
-    con_dim = len(replay_buffers)
-    vae_discrim = disc(input_dim=obs_dim[0], context_dim=con_dim, **dc_kwargs)
+    # valor_vqvae = vqvae(obs_dim=env.observation_space.shape[0], hidden_dim=20,
+    #     out_dim=60,  ##  dimensionality of each latent embedding vector
+    #     num_embeddings=2, # size of the discrete latent space
+    #     embedding_dim=2 # dimensionality of each latent embedding vector
+    #                     )
+
+    # beta = 1.0
+    # vq_criterion = VQCriterion(beta)
+    # vae_discrim = disc(input_dim=obs_dim[0], context_dim=con_dim, **dc_kwargs)
 
     # Set up model saving
     logger.setup_pytorch_saver([valor_vae])
@@ -85,11 +93,9 @@ def vanilla_valor(env_fn,
 
     # Optimizers
     vae_optimizer = Adam(valor_vae.parameters(), lr=vae_lr)
-    # steps = train_valor_iters
-    # scheduler = lr_scheduler.CosineAnnealingLR(vae_optimizer, steps)
-
-    context_optimizer = Adam(valor_vae.lmbd.parameters(), lr=vae_lr)
-    action_optimizer = Adam(valor_vae.decoder.parameters(), lr=vae_lr)
+    # vq_optimizer = Adam(valor_vqvae.parameters(), vae_lr)
+    # context_optimizer = Adam(valor_vae.lmbd.parameters(), lr=vae_lr)
+    # action_optimizer = Adam(valor_vae.decoder.parameters(), lr=vae_lr)
 
     start_time = time.time()
 
@@ -104,54 +110,62 @@ def vanilla_valor(env_fn,
 
 # Main Loop
     for epoch in range(epochs):
+        # valor_vqvae.train()
+
         valor_vae.train()
         ##
 
         c = context_dist.sample()  # this causes context learning to collapse very quickly
         c_onehot = F.one_hot(c, con_dim).squeeze().float()
 
-        o_tensor = context_dist.sample_n(train_batch_size)
+        o_tensor = context_dist.sample((train_batch_size,))
         o_onehot = F.one_hot(o_tensor, con_dim).squeeze().float()
+
 
         # Select state transitions and actions at random indexes
         batch_indexes = torch.randint(len(transition_states), (train_batch_size,))
         raw_states_batch, delta_states_batch, actions_batch, sampled_experts = \
            pure_states[batch_indexes], transition_states[batch_indexes], transition_actions[batch_indexes], expert_ids[batch_indexes]
 
-        print("Expert IDs: ", sampled_experts[:2])
+        print("Expert IDs: ", sampled_experts)
         # Train the VAE encoder and decoder
 
         min_loss = 1
         iter=0
 
         for _ in range(train_valor_iters):  # original
-
             vae_optimizer.zero_grad()
+
             # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
             #                                                                      actions_batch, c_onehot)
 
             loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
                                                                                  actions_batch, o_onehot)
-
             # loss.backward(torch.ones_like(loss))
             # loss.sum().backward()
             loss.mean().backward()
-
-            # loss_no_mean = loss   ## instead of meaning the loss
-            # for i in range(loss.shape[-1]):
-            #     vae_optimizer.zero_grad()
-            #     loss_no_mean[i].backward(retain_graph=True)
-
             vae_optimizer.step()
             min_loss = context_loss.mean().data.item()
             iter += 1
-            print("Epoch: \t", epoch, "\t Iter: \t", iter, "\t Context Loss: \t", min_loss, end='\n')
+            # print("Epoch: \t", epoch, "\t Iter: \t", iter, "\t Context Loss: \t", min_loss, end='\n')
 
-            # scheduler.step()
-            # print("Scheduler LR: ", scheduler.get_lr())
+            #######
+            # encoder_output, quantized, reconstruction = valor_vqvae(delta_states_batch)
+            # print("Encoder Output: ", encoder_output)
+            # total_loss, reconstruction_loss, vq_loss, commitment_loss = \
+            #                 vq_criterion(delta_states_batch, encoder_output, quantized, reconstruction)
+            #
+            # # print("Delta State 0! ", delta_states_batch[0])
+            # # print("Reconstruction 0! ", reconstruction[0])
+            # print("Quantized! 0", quantized)
+            # print("Loss! ", total_loss)
+            #
+            # vq_optimizer.zero_grad()
+            # total_loss.backward()
+            # vq_optimizer.step()
 
-        # print('Reset scheduler')
-        # scheduler = lr_scheduler.CosineAnnealingLR(vae_optimizer, steps)
+
+
 
         # valor_l_new, recon_l_new, context_l_new = loss.sum().data.item(), recon_loss.sum().data.item(), context_loss.sum().data.item()
         valor_l_new, recon_l_new, context_l_new = loss.mean().data.item(), recon_loss.mean().data.item(), context_loss.mean().data.item()
@@ -192,13 +206,18 @@ def vanilla_valor(env_fn,
     fake_c = context_dist.sample()
     fake_c_onehot = F.one_hot(fake_c, con_dim).squeeze().float()
 
+    fake_o = context_dist.sample((eval_batch_size*2,))
+    fake_o_onehot = F.one_hot(fake_o, con_dim).squeeze().float()
+
+    print("FAKE O: ", fake_o_onehot)
+
     # Randomize and fetch an evaluation sample
     eval_raw_states_batch, eval_delta_states_batch, eval_actions_batch, eval_sampled_experts = \
          mem.eval_batch(N_expert, eval_batch_size, episodes_per_epoch)
 
     # Pass through VAELOR
-    loss, recon_loss, kl_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
-                                                                                 eval_actions_batch, fake_c_onehot)
+    loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
+                                                                                 eval_actions_batch, fake_o_onehot)
     # print("Latent V: ", latent_v)
     predicted_expert_labels = np.argmax(latent_v, axis=1)  # convert from one-hot
     ground_truth, predictions = eval_sampled_experts, predicted_expert_labels
@@ -266,6 +285,32 @@ def vanilla_valor(env_fn,
                "Learner1 Tracing Dimension 2": wandb.plot.scatter(learner_y_table1, "x", "y",
                                                                  title="Student [1] Behavior over Time (Y plane)")
                })
+
+    # # Log points and boxes
+
+    # point_cloud = np.array([[0, 0, 0, 0], ...])
+    # wandb.log({"point_cloud": wandb.Object3D(point_cloud)})
+
+    # wandb.log({
+    #         "point_scene": wandb.Object3D(
+    #             {"type": "lidar/beta",
+    #              "points": np.array([
+    #                         [0.4, 1, 1.3],
+    #                         [1, 1, 1],
+    #                         [1.2, 1, 1.2]]),
+    #               "boxes": np.array([{"corners": [
+    #                                 [0, 0, 0], [0, 1, 0], [0, 0, 1],
+    #                                 [1, 0, 0], [1, 1, 0], [0, 1, 1],
+    #                                 [1, 0, 1], [1, 1, 1]],
+    #                             "label": "Box",
+    #                             "color": [123, 321, 111],},
+    #                         {"corners": [
+    #                                 [0, 0, 0], [0, 2, 0], [0, 0, 2],
+    #                                 [2, 0, 0], [2, 2, 0], [0, 2, 2],
+    #                                 [2, 0, 2], [2, 2, 2]],
+    #                             "label": "Box-2",
+    #                             "color": [111, 321, 0],}]
+    #                 ),})})
 
     wandb.finish()
 

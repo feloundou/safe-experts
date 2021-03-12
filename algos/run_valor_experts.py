@@ -148,16 +148,15 @@ logger_kwargs = setup_logger_kwargs('vanilla-valor-expts', 0)
 
 vanilla_valor(lambda: gym.make(ENV_NAME),
            dc_kwargs=dict(hidden_dims=[128] * 4),
-           # ac_kwargs=dict(hidden_sizes=[128] * 4),
            seed=444,
            # seed=123,
            episodes_per_epoch=10,   # fix reward accumulation
            max_ep_len=ep_len_config,
            epochs=100,
-           vae_lr=3e-4,
+           vae_lr=3e-4,   # Karpathy Konstant
            # vae_lr=0.025, # optimal rate    # seems like a learning rate this high (around 0.2) is okay???
-           train_batch_size=10,
-           train_valor_iters=10,  # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
+           train_batch_size=10,    # context loss seems to stall at 0.6-0.7 regardless of batch size. If you add some constant, e.g. 0.5, it will stay there, e.g. 1.2
+           train_valor_iters=20,  # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
            eval_batch_size=100,
            logger_kwargs=logger_kwargs,
            replay_buffers=[marigold_rb, rose_rb],

@@ -389,10 +389,6 @@ class ValorFFNNPolicy(nn.Module):
         self.linear = nn.Linear(hidden_dims[-1], con_dim)
 
     def forward(self, seq, gt=None, classes=False):
-        # inter_states = self.context_net(seq)
-        # # print("seq: ", seq)
-        # # print("gt: ", gt)
-        # logit_seq = self.linear(inter_states)
         logit_seq = self.context_net(seq)
         self.logits = torch.mean(logit_seq, dim=1)
         policy = Categorical(logits=self.logits)
@@ -570,8 +566,42 @@ def MLP_DiagGaussianPolicy(state_dim, hidden_dims, action_dim,
 
 #############################################################################
 
-class OneHotCategoricalActor(Actor):
 
+class BottleneckEncoder(nn.Module):
+    def __init__(self, in_dim, hidden_sizes, out_dim, activation=nn.Tanh):
+        super().__init__()
+        z_size = 128
+
+        self.fc1 = nn.Linear(in_dim, hidden_sizes[0])
+        self.fc2 = nn.Linear(hidden_sizes[0], z_size)
+        self.fc3 = nn.Linear(hidden_sizes[0], z_size)
+        self.fc4 = nn.Linear(z_size, hidden_sizes[0])
+        self.fc5 = nn.Linear(hidden_sizes[0], 1)
+
+        self.fc5.weight.data.mul_(0.1)
+        self.fc5.bias.data.mul_(0.0)
+
+    def encoder(self, x):
+        h = torch.tanh(self.fc1(x))
+        return self.fc2(h), self.fc3(h)
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(logvar / 2)
+        eps = torch.randn_like(std)
+        return mu + std * eps
+
+    def discriminator(self, z):
+        h = torch.tanh(self.fc4(z))
+        return torch.sigmoid(self.fc5(h))
+
+    def forward(self, x):
+        mu, logvar = self.encoder(x)
+        z = self.reparameterize(mu, logvar)
+        prob = self.discriminator(z)
+        return prob, mu, logvar
+
+
+class OneHotCategoricalActor(Actor):
     def __init__(self, obs_dim, con_dim, hidden_sizes, activation):
         super().__init__()
         self.logits_net = mlp([obs_dim] + list(hidden_sizes) + [con_dim], activation)
@@ -580,54 +610,66 @@ class OneHotCategoricalActor(Actor):
         logits = self.logits_net(obs)
         return OneHotCategorical(logits=logits)
 
-    def _log_prob_from_distribution(self, pi, act):
-        return pi.log_prob(act)
-
-class VAE_Encoder(nn.Module):
-    def __init__(self, nx_sizes):
-        super(VAE_Encoder, self).__init__()
-        # hidden_sizes = [100]
-        self.logits_net = mlp(nx_sizes, activation=nn.Tanh)
-
-    def forward(self, x):
-        # y = F.relu(self.linear1(x))
-        # z = F.relu(self.linear2(y))
-        # y = F.tanh(self.linear1(x))   ### TODO: Confirm if this tanh vs relu was the biggest ISSUE! UGH
-        # z = F.tanh(self.linear2(y))
-
-        z = self.logits_net(x)
-        return z
-
-
-class VAE_Decoder(nn.Module):
-    def __init__(self, in_dim, hidden, out_dim, activation=nn.Tanh):
-        super(VAE_Decoder, self).__init__()
-        # act_dim = 2
-        # # hidden_sizes = [128]*4
-        # # activation = nn.Tanh
-
-        self.pi = MLPGaussianActor(in_dim, out_dim, hidden, activation)
-
-    def forward(self, x):
-        return self.pi._distribution(x)
 
 class Lambda(nn.Module):
     """Lambda module converts output of encoder to latent vector
     :param hidden_size: hidden size of the encoder
     :param latent_length: latent vector length
     """
-    def __init__(self, input_dim, latent_length):
+    def __init__(self, hidden_dim, hidden_sizes, con_dim=2):
         super(Lambda, self).__init__()
-        self._latent_net = nn.Linear(input_dim, latent_length)   ## old
 
-        hidden_sizes = [500]
-        con_dim = 2
+        self.hidden_dim = hidden_dim
+        self.hidden_size = hidden_sizes
+        self.latent_length = con_dim
 
-        self.lambda_pi = OneHotCategoricalActor(input_dim, con_dim, hidden_sizes, activation=nn.Tanh)
+        # self.hidden_to_mean = nn.Linear(self.hidden_size[0], self.latent_length)
+        # self.hidden_to_logvar = nn.Linear(self.hidden_size[0], self.latent_length)
 
+        self.hidden_to_mean = nn.Linear(self.hidden_dim, self.latent_length)
+        self.hidden_to_logvar = nn.Linear(self.hidden_dim, self.latent_length)
+
+        nn.init.xavier_uniform_(self.hidden_to_mean.weight)
+        nn.init.xavier_uniform_(self.hidden_to_logvar.weight)
+
+        # self.lambda_pi = OneHotCategoricalActor(hidden_dim, self.latent_length, hidden_sizes, activation=nn.Tanh)
+        self.lambda_pi = OneHotCategoricalActor(self.latent_length, self.latent_length, hidden_sizes, activation=nn.Tanh)
 
     def forward(self, cell_output):
-        return self.lambda_pi._distribution(cell_output)
+
+        self.latent_mean = self.hidden_to_mean(cell_output)
+        self.latent_logvar = self.hidden_to_logvar(cell_output)
+
+        self.training=True
+
+        if self.training:
+            std = torch.exp(0.5 * self.latent_logvar)
+            eps = torch.randn_like(std)
+            latent_out= eps.mul(std).add_(self.latent_mean)
+        else:
+            latent_out = self.latent_mean
+
+        # return self.lambda_pi._distribution(cell_output), latent_out
+        return self.lambda_pi._distribution(latent_out), latent_out
+
+
+class VAE_Encoder(nn.Module):
+    def __init__(self, nx_sizes):
+        super(VAE_Encoder, self).__init__()
+        self.logits_net = mlp(nx_sizes, activation=nn.Tanh)
+
+    def forward(self, x):
+        return self.logits_net(x)
+
+# Try NN.Identity
+class VAE_Decoder(nn.Module):
+    def __init__(self, in_dim, hidden, out_dim, activation):
+        super(VAE_Decoder, self).__init__()
+        self.pi = MLPGaussianActor(in_dim, out_dim, hidden, activation)
+
+    def forward(self, x):
+        return self.pi._distribution(x)
+
 
 
 
@@ -642,26 +684,62 @@ class VAELOR(torch.nn.Module):
         :param latent_length: latent vector length
         """
         act_dim = 2
-        # link_layer = 400
-        encoder_sizes = [obs_dim, 100, 400]
-        decoder_hidden = [128]*4
+        # encoder_sizes = [obs_dim] + [100]*4
+        # lambda_sizes = [100]*2
+        # decoder_hidden = [500]
 
+        encoder_sizes = [obs_dim] + [10]
+        lambda_sizes = [5]
+        decoder_hidden = [10, 10]
+
+        ### Smaller than dim of state and delta state
+        ### Note that the context loss (that does not go down) seems related
+        # to encoder size (total number of parameters) !!!!!
+        # decoder_hidden = [500]  # This works REALLY well
+        ## NOTE: The Tanh activation function really influences learned actions.
+        ## Making the decoder less deep improves it.
+        # self.encoder_bn  = BottleneckEncoder(obs_dim, [100], latent_dim )
+        # self.lmbd_bn = Lambda(input_dim=1, hidden_sizes=[500], con_dim=2)
+        # ####
+        # TODO: Try squared components of each action (to get distance) + sum (to get sign)
         self.encoder = VAE_Encoder(encoder_sizes) # original
-        self.lmbd = Lambda(input_dim=encoder_sizes[-1], latent_length=latent_dim)
+        self.lmbd = Lambda(hidden_dim=encoder_sizes[-1], hidden_sizes=lambda_sizes, con_dim=2)
         self.decoder = VAE_Decoder(obs_dim + latent_dim, decoder_hidden, act_dim, activation=nn.Tanh)
+        ## TODO: Activation function makes no diff
 
-    def forward(self, state, delta_state, action, latent_labels = None):
-        delta_state_enc = self.encoder(delta_state) # original
 
-        # latent_v = self.lmbd(delta_state_enc)  # original
-        latent_v_dist = self.lmbd(delta_state_enc)
-        if latent_labels is None:
-            latent_labels= latent_v_dist.sample()
+    def forward(self, state, delta_state, action, context_sample, latent_labels = None):
+        delta_state_enc = self.encoder(delta_state)
+        latent_v_dist, latent_output = self.lmbd(delta_state_enc)
 
-        # print("Latent V Sample: ", latent_labels[:2])
-        concat_state = torch.cat([state, latent_labels], dim=1)
+        ##
+        latent_mean = self.lmbd.latent_mean
+        latent_logvar = self.lmbd.latent_logvar
+        ##
+        latent_labels = latent_v_dist.sample()
+
+        # ### Interlude
+        # discrim_prob, discrim_mu, discrim_logvar = self.encoder_bn(delta_state)
+        # con_dim = 2
+        # latent_candidates = F.one_hot((discrim_prob > 0.5).long(), con_dim).squeeze().float()
+        # bottle_neck_dist = self.lmbd_bn(discrim_prob)
+        # latent_candidates2 = bottle_neck_dist.sample()
+        # # print("original latent label sample: ", latent_labels)
+        # # print("first latent candidates: ", latent_candidates)
+        # print("more latent candidates: ", latent_candidates2)
+        # # latent_v_dist = bottle_neck_dist   ## TODO: this is really important to review
+        # discrim_std = torch.exp(discrim_logvar / 2)
+        # new_dist = Normal(discrim_mu, discrim_std)
+        # # latent_candidates3 = new_dist.rsample()
+        # # print("LATENT 3 : ", latent_candidates3.mean(axis=-1))
+        # # latent_labels = latent_candidates  # option 2
+        # latent_labels = latent_candidates2 # option 3
+        ###
+
+        concat_state = torch.cat([state, latent_labels], dim=-1)
+        # concat_state = torch.cat([state, context_sample], dim=-1)
+        print("shape of concat state: ", concat_state.shape)
         action_dist = self.decoder(concat_state)
-        # return action_dist, latent_labels
         return action_dist, latent_labels, latent_v_dist
 
 
@@ -671,23 +749,46 @@ class VAELOR(torch.nn.Module):
         Represents the lifecycle of a single iteration
         :param X: Input tensor
         :return: total loss, reconstruction loss, kl-divergence loss and original input
+
+        : Important to note that both recon and context loss cannot be negative.
         """
         # decoded_action, latent_labels, logp_action = self(X, Delta_X)
-        action_dist, latent_labels, latent_labels_dist = self(X, Delta_X, A)
+        action_dist, latent_labels, latent_labels_dist = self(X, Delta_X, A, context_sample)
+
+        latent_mean, latent_logvar = self.lmbd.latent_mean, self.lmbd.latent_logvar
+        kl_loss = -0.5 * torch.mean(1 + latent_logvar - latent_mean.pow(2) - latent_logvar.exp())
+
 
         # get latent labels for checking accuracy
-        context_loss = 0.5 -latent_labels_dist.log_prob(context_sample)  # this is the correct version  ##
-        # recon_loss = -action_dist.log_prob(A).sum(axis=-1)  ## TODO: Remove negative sign somewhere
-        recon_loss = torch.exp(action_dist.log_prob(A).sum(axis=-1))
-        loss = recon_loss * context_loss          # loss = recon_loss + context_loss
+        context_loss = 0.5 - latent_labels_dist.log_prob(context_sample)  # this is the correct version  ##
+        latent_mean, latent_logvar = self.lmbd.latent_mean, self.lmbd.latent_logvar
 
+        # # find a reward for having a distribution that matches actions well.
+        # sample_action = action_dist.sample()
+        # action_reward = F.mse_loss(sample_action, A)
+        # print("action reward: ", action_reward)
+        # print("Context sample: ", context_sample)
+        # print("Latent labels: ", latent_labels)
+        # print("Context loss: ", context_loss)
 
-        # print("Expert Action: \t", A[:2])
-        # print("Learner Action: \t", sampled_action[:2])
-        # print("Total Valor Loss: \t ", loss[:2])
-        # print("context loss: \t", context_loss[:2])
-        # print("recon loss: \t", recon_loss[:2])
+        # recon_loss = -action_dist.log_prob(A).sum(axis=-1)  ## TODO: Remove negative sign somewhere. Done
+        recon_loss = torch.exp(action_dist.log_prob(A).sum(axis=-1)) + kl_loss  # TODO: Remove kl_loss
+
+        # NOTE here: when policy is very different
+        print("kl loss: ", kl_loss)
+        print("recon loss: ", recon_loss)
+        # loss = recon_loss * context_loss * action_reward
+        loss = recon_loss * context_loss
+        print("loss: ", loss)
+
         return loss, recon_loss, context_loss, X, latent_labels
+
+
+
+
+
+
+
 
 
 
@@ -698,8 +799,296 @@ class VAELOR(torch.nn.Module):
 
 ########
 
-class MLPContextLabeler(Actor):
 
+
+class VQEncoder(nn.Module):
+
+    def __init__(self, in_dim, out_dim,):
+        super(VQEncoder, self).__init__()
+        # self.logits_net = mlp([in_dim, in_dim//2, out_dim], activation=nn.Tanh)
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, out_dim // 2),
+            nn.ReLU(inplace=True),
+            nn.Linear(out_dim // 2, out_dim)
+        )
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return self.net(input)
+
+
+class Clamper(nn.Module):
+
+    def __init__(self, min=None, max=None):
+        super().__init__()
+
+        self.min = min
+        self.max = max
+
+    def forward(self, input):
+        return torch.clamp(input, self.min, self.max)
+
+class VQDecoder(nn.Module):
+    def __init__(self, obs_dim: int, hidden_size: int,):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(obs_dim, hidden_size),
+            nn.ReLU(inplace=True),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(inplace=True),
+            Clamper(-10, 10),
+            nn.Sigmoid()
+        )
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return self.net(input)
+
+
+class VectorQuantizer(nn.Module):
+
+    def __init__( self, num_embeddings: int, embedding_dim: int) -> None:
+        super().__init__()
+
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+
+        self.embeddings = nn.Embedding(num_embeddings, embedding_dim)
+
+        self.scale = 1. / self.num_embeddings
+        torch.nn.init.uniform_(self.embeddings.weight, -self.scale, self.scale)
+
+    def proposal_distribution(self, input: torch.Tensor):
+        # input.shape == [B, C, H, W]
+        # input = input.permute(0, 2, 3, 1)
+        input_shape = input.shape
+
+        # .shape == [B * H * W, C]
+        # worth noting that each image has (H * W) codes
+        # (each code match some pixel) of size C
+        flatten_input = input.flatten(end_dim=-2).contiguous()
+
+        distances = (flatten_input ** 2).sum(dim=1, keepdim=True)
+        distances = distances + (self.embeddings.weight ** 2).sum(dim=1)
+        distances -= 2 * flatten_input @ self.embeddings.weight.t()
+
+        categorical_posterior = torch.argmin(distances, dim=-1, keepdim=True) \
+            .view(input_shape[:-1])
+
+        return categorical_posterior
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        proposal = self.proposal_distribution(input)
+
+        quantized = self.embeddings(proposal).contiguous()
+
+        return quantized
+
+
+class VQCriterion(nn.Module):
+    """
+    vq_loss: \| \text{sg}[I(x, e)] * e  - \text{sg}[z_e(x)] \|_2^2
+    """
+
+    def __init__(self, beta: float):
+        super().__init__()
+        self.beta = beta
+
+    def forward(
+        self,
+        input: torch.Tensor,
+        encoder_output: torch.Tensor,
+        quantized: torch.Tensor,
+        reconstruction: torch.Tensor,
+    ) -> torch.Tensor:
+
+        flatten_quantized = quantized.flatten(end_dim=-2)
+        flatten_encoder_output = encoder_output.flatten(end_dim=-2)
+
+        reconstruction_loss = F.mse_loss(input, reconstruction)
+        vq_loss = F.mse_loss(flatten_encoder_output.detach(), flatten_quantized)
+        commitment_loss = F.mse_loss(flatten_encoder_output, flatten_quantized.detach())
+
+        total_loss = reconstruction_loss + vq_loss + self.beta * commitment_loss
+
+        return total_loss, reconstruction_loss, vq_loss, commitment_loss
+
+
+class VQVAELOR(nn.Module):
+    """
+    https://arxiv.org/abs/1711.00937
+    """
+
+    def __init__(
+        self,
+        obs_dim: int,
+        hidden_dim: int,
+        out_dim: int,
+        num_embeddings: int,
+        embedding_dim: int,
+    ) -> None:
+        super().__init__()
+
+        in_dim = obs_dim
+        hidden_dim = 20
+
+        latent_dim = 2
+
+        self.encoder = VQEncoder(in_dim, hidden_dim)
+        self.decoder = VQDecoder(hidden_dim, out_dim)
+        self.vector_quantizer = VectorQuantizer(num_embeddings, embedding_dim)
+
+        self.prenet = nn.Linear(hidden_dim, latent_dim)
+        self.postnet = nn.Linear(latent_dim, hidden_dim)
+
+        # self.prenet = nn.Conv2d(hidden_channels, embedding_dim, kernel_size=1)
+        # self.postnet = nn.Conv2d(embedding_dim, hidden_channels, kernel_size=3, padding=1)
+
+    def encode(self, input: torch.Tensor) -> torch.Tensor:
+        encoder_output = self.encoder(input)
+        encoder_output = self.prenet(encoder_output)
+        quantized = self.vector_quantizer(encoder_output)
+
+        return quantized
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        encoder_output = self.encoder(input)
+        encoder_output = self.prenet(encoder_output)
+
+        quantized = self.vector_quantizer(encoder_output)
+
+        # Straight Through Estimator (Some Magic)
+        st_quantized = encoder_output + (quantized - encoder_output).detach()
+        post_quantized = self.postnet(st_quantized)
+
+        reconstruction = self.decoder(post_quantized)
+
+        return encoder_output, quantized, reconstruction
+
+    @torch.no_grad()
+    def generate(self, prior):
+        raise NotImplementedError()
+
+
+
+
+
+########
+
+# class VectorQuantizedVAE(nn.Module):
+#     def __init__(self, input_dim, dim, K=512):
+#         super().__init__()
+#         self.encoder = nn.Sequential(
+#             nn.Conv2d(input_dim, dim, 4, 2, 1),
+#             nn.BatchNorm2d(dim),
+#             nn.ReLU(True),
+#             nn.Conv2d(dim, dim, 4, 2, 1),
+#             ResBlock(dim),
+#             ResBlock(dim),
+#         )
+#
+#         self.codebook = VQEmbedding(K, dim)
+#
+#         self.decoder = nn.Sequential(
+#             ResBlock(dim),
+#             ResBlock(dim),
+#             nn.ReLU(True),
+#             nn.ConvTranspose2d(dim, dim, 4, 2, 1),
+#             nn.BatchNorm2d(dim),
+#             nn.ReLU(True),
+#             nn.ConvTranspose2d(dim, input_dim, 4, 2, 1),
+#             nn.Tanh()
+#         )
+#
+#         self.apply(weights_init)
+#
+#     def encode(self, x):
+#         z_e_x = self.encoder(x)
+#         latents = self.codebook(z_e_x)
+#         return latents
+#
+#     def decode(self, latents):
+#         z_q_x = self.codebook.embedding(latents).permute(0, 3, 1, 2)  # (B, D, H, W)
+#         x_tilde = self.decoder(z_q_x)
+#         return x_tilde
+#
+#     def forward(self, x):
+#         z_e_x = self.encoder(x)
+#         z_q_x_st, z_q_x = self.codebook.straight_through(z_e_x)
+#         x_tilde = self.decoder(z_q_x_st)
+#         return x_tilde, z_e_x, z_q_x
+#
+#
+# class GatedActivation(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#
+#     def forward(self, x):
+#         x, y = x.chunk(2, dim=1)
+#         return F.tanh(x) * F.sigmoid(y)
+#
+#
+# class GatedMaskedConv2d(nn.Module):
+#     def __init__(self, mask_type, dim, kernel, residual=True, n_classes=10):
+#         super().__init__()
+#         assert kernel % 2 == 1, print("Kernel size must be odd")
+#         self.mask_type = mask_type
+#         self.residual = residual
+#
+#         self.class_cond_embedding = nn.Embedding(
+#             n_classes, 2 * dim
+#         )
+#
+#         kernel_shp = (kernel // 2 + 1, kernel)  # (ceil(n/2), n)
+#         padding_shp = (kernel // 2, kernel // 2)
+#         self.vert_stack = nn.Conv2d(
+#             dim, dim * 2,
+#             kernel_shp, 1, padding_shp
+#         )
+#
+#         self.vert_to_horiz = nn.Conv2d(2 * dim, 2 * dim, 1)
+#
+#         kernel_shp = (1, kernel // 2 + 1)
+#         padding_shp = (0, kernel // 2)
+#         self.horiz_stack = nn.Conv2d(
+#             dim, dim * 2,
+#             kernel_shp, 1, padding_shp
+#         )
+#
+#         self.horiz_resid = nn.Conv2d(dim, dim, 1)
+#
+#         self.gate = GatedActivation()
+#
+#     def make_causal(self):
+#         self.vert_stack.weight.data[:, :, -1].zero_()  # Mask final row
+#         self.horiz_stack.weight.data[:, :, :, -1].zero_()  # Mask final column
+#
+#     def forward(self, x_v, x_h, h):
+#         if self.mask_type == 'A':
+#             self.make_causal()
+#
+#         h = self.class_cond_embedding(h)
+#         h_vert = self.vert_stack(x_v)
+#         h_vert = h_vert[:, :, :x_v.size(-1), :]
+#         out_v = self.gate(h_vert + h[:, :, None, None])
+#
+#         h_horiz = self.horiz_stack(x_h)
+#         h_horiz = h_horiz[:, :, :, :x_h.size(-2)]
+#         v2h = self.vert_to_horiz(h_vert)
+#
+#         out = self.gate(v2h + h_horiz + h[:, :, None, None])
+#         if self.residual:
+#             out_h = self.horiz_resid(out) + x_h
+#         else:
+#             out_h = self.horiz_resid(out)
+#
+#         return out_v, out_h
+
+
+
+
+
+########
+
+class MLPContextLabeler(Actor):
     # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
     def __init__(self, input_dim, context_dim, hidden_sizes, activation):
         super().__init__()
