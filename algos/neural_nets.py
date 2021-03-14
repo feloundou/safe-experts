@@ -608,7 +608,9 @@ class OneHotCategoricalActor(Actor):
 
     def _distribution(self, obs):
         logits = self.logits_net(obs)
+        print("Categorical logits: ", logits)
         return OneHotCategorical(logits=logits)
+        # return Categorical(logits=logits)
 
 
 class Lambda(nn.Module):
@@ -616,47 +618,50 @@ class Lambda(nn.Module):
     :param hidden_size: hidden size of the encoder
     :param latent_length: latent vector length
     """
-    def __init__(self, hidden_dim, hidden_sizes, con_dim=2):
+    def __init__(self, hidden_dim, hidden_sizes, con_dim):
         super(Lambda, self).__init__()
+
+        interm_ = 50
+
+        self._enc_mu = torch.nn.Linear(hidden_dim, interm_)
+        self._enc_log_sigma = torch.nn.Linear(hidden_dim, interm_)
 
         self.hidden_dim = hidden_dim
         self.hidden_size = hidden_sizes
         self.latent_length = con_dim
 
-        # self.hidden_to_mean = nn.Linear(self.hidden_size[0], self.latent_length)
-        # self.hidden_to_logvar = nn.Linear(self.hidden_size[0], self.latent_length)
+        self.lambda_pi = OneHotCategoricalActor(hidden_dim, self.latent_length, hidden_sizes, activation=nn.Tanh)  # original (before reparam)
+        # self.lambda_pi = OneHotCategoricalActor(interm_, self.latent_length, hidden_sizes, activation=nn.Tanh)
 
-        self.hidden_to_mean = nn.Linear(self.hidden_dim, self.latent_length)
-        self.hidden_to_logvar = nn.Linear(self.hidden_dim, self.latent_length)
+    def z_latent_loss(self, z_mean, z_stddev):
+        mean_sq = z_mean * z_mean
+        stddev_sq = z_stddev * z_stddev
+        return 0.5 * torch.mean(mean_sq + stddev_sq - torch.log(stddev_sq) - 1)
 
-        nn.init.xavier_uniform_(self.hidden_to_mean.weight)
-        nn.init.xavier_uniform_(self.hidden_to_logvar.weight)
+    def forward(self, encoder_output):
+        mu = self._enc_mu(encoder_output)
+        log_sigma = self._enc_log_sigma(encoder_output)
 
-        # self.lambda_pi = OneHotCategoricalActor(hidden_dim, self.latent_length, hidden_sizes, activation=nn.Tanh)
-        self.lambda_pi = OneHotCategoricalActor(self.latent_length, self.latent_length, hidden_sizes, activation=nn.Tanh)
+        sigma = torch.exp(log_sigma)
+        std_z = torch.from_numpy(np.random.normal(0, 1, size=sigma.size())).float()
+        self.z_mean = mu
+        self.z_sigma = sigma
 
-    def forward(self, cell_output):
+        reparam_output = mu + sigma * nn.Parameter(std_z, requires_grad=False)
+        reparam_latent_loss = self.z_latent_loss(self.z_mean, self.z_sigma)
 
-        self.latent_mean = self.hidden_to_mean(cell_output)
-        self.latent_logvar = self.hidden_to_logvar(cell_output)
+        # print("Reparam trick: ", reparam_output)
+        print("Latent loss here: ", reparam_latent_loss)
 
-        self.training=True
-
-        if self.training:
-            std = torch.exp(0.5 * self.latent_logvar)
-            eps = torch.randn_like(std)
-            latent_out= eps.mul(std).add_(self.latent_mean)
-        else:
-            latent_out = self.latent_mean
-
-        # return self.lambda_pi._distribution(cell_output), latent_out
-        return self.lambda_pi._distribution(latent_out), latent_out
+        return self.lambda_pi._distribution(encoder_output)
+        # return self.lambda_pi._distribution(reparam_output), reparam_latent_loss
 
 
 class VAE_Encoder(nn.Module):
-    def __init__(self, nx_sizes):
+    def __init__(self, network_sizes):
         super(VAE_Encoder, self).__init__()
-        self.logits_net = mlp(nx_sizes, activation=nn.Tanh)
+
+        self.logits_net = mlp(network_sizes, activation=nn.Tanh)
 
     def forward(self, x):
         return self.logits_net(x)
@@ -671,11 +676,11 @@ class VAE_Decoder(nn.Module):
         return self.pi._distribution(x)
 
 
-
-
 class VAELOR(torch.nn.Module):
 
-    def __init__(self, obs_dim, latent_dim):
+    # Iterate batches once through the model (prevent overfitting data that is of fickle nature)
+
+    def __init__(self, obs_dim, latent_dim, out_dim=2):
         super(VAELOR, self).__init__()
         """
         Given input tensor, forward prop to get context samples, raw state and state differences. 
@@ -683,14 +688,9 @@ class VAELOR(torch.nn.Module):
         :param obs_dim: state dimension
         :param latent_length: latent vector length
         """
-        act_dim = 2
-        # encoder_sizes = [obs_dim] + [100]*4
-        # lambda_sizes = [100]*2
-        # decoder_hidden = [500]
-
         encoder_sizes = [obs_dim] + [10]
-        lambda_sizes = [5]
-        decoder_hidden = [10, 10]
+        lambda_sizes = [5, 5]
+        decoder_hidden = [20]
 
         ### Smaller than dim of state and delta state
         ### Note that the context loss (that does not go down) seems related
@@ -698,90 +698,104 @@ class VAELOR(torch.nn.Module):
         # decoder_hidden = [500]  # This works REALLY well
         ## NOTE: The Tanh activation function really influences learned actions.
         ## Making the decoder less deep improves it.
-        # self.encoder_bn  = BottleneckEncoder(obs_dim, [100], latent_dim )
-        # self.lmbd_bn = Lambda(input_dim=1, hidden_sizes=[500], con_dim=2)
-        # ####
+
         # TODO: Try squared components of each action (to get distance) + sum (to get sign)
-        self.encoder = VAE_Encoder(encoder_sizes) # original
-        self.lmbd = Lambda(hidden_dim=encoder_sizes[-1], hidden_sizes=lambda_sizes, con_dim=2)
-        self.decoder = VAE_Decoder(obs_dim + latent_dim, decoder_hidden, act_dim, activation=nn.Tanh)
-        ## TODO: Activation function makes no diff
-
-
-    def forward(self, state, delta_state, action, context_sample, latent_labels = None):
-        delta_state_enc = self.encoder(delta_state)
-        latent_v_dist, latent_output = self.lmbd(delta_state_enc)
-
-        ##
-        latent_mean = self.lmbd.latent_mean
-        latent_logvar = self.lmbd.latent_logvar
-        ##
-        latent_labels = latent_v_dist.sample()
-
-        # ### Interlude
-        # discrim_prob, discrim_mu, discrim_logvar = self.encoder_bn(delta_state)
-        # con_dim = 2
-        # latent_candidates = F.one_hot((discrim_prob > 0.5).long(), con_dim).squeeze().float()
-        # bottle_neck_dist = self.lmbd_bn(discrim_prob)
-        # latent_candidates2 = bottle_neck_dist.sample()
-        # # print("original latent label sample: ", latent_labels)
-        # # print("first latent candidates: ", latent_candidates)
-        # print("more latent candidates: ", latent_candidates2)
-        # # latent_v_dist = bottle_neck_dist   ## TODO: this is really important to review
-        # discrim_std = torch.exp(discrim_logvar / 2)
-        # new_dist = Normal(discrim_mu, discrim_std)
-        # # latent_candidates3 = new_dist.rsample()
-        # # print("LATENT 3 : ", latent_candidates3.mean(axis=-1))
-        # # latent_labels = latent_candidates  # option 2
-        # latent_labels = latent_candidates2 # option 3
+        num_embeddings = 10  # batch_size
+        embedding_dim = obs_dim
+        self.vq_encoder = VQEncoder(obs_dim, encoder_sizes[-1])  # original
+        self.prenet = nn.Linear(encoder_sizes[-1], embedding_dim)
+        self.vector_quantizer = VectorQuantizer(num_embeddings, embedding_dim)
+        self.postnet = nn.Linear(embedding_dim, encoder_sizes[-1])
+        self.vq_decoder = VQDecoder(encoder_sizes[-1], obs_dim)
         ###
 
-        concat_state = torch.cat([state, latent_labels], dim=-1)
-        # concat_state = torch.cat([state, context_sample], dim=-1)
-        print("shape of concat state: ", concat_state.shape)
+        self.encoder = VAE_Encoder(encoder_sizes) # original
+        self.lmbd = Lambda(hidden_dim=encoder_sizes[-1], hidden_sizes=lambda_sizes, con_dim=latent_dim)
+        self.decoder = VAE_Decoder(obs_dim + latent_dim, decoder_hidden, out_dim, activation=nn.Tanh)
+
+
+
+    def forward(self, state, delta_state, con_dim):
+        delta_state_enc = self.encoder(delta_state)
+        latent_v_dist = self.lmbd(delta_state_enc)
+        # latent_v_dist, latent_loss = self.lmbd(delta_state_enc)
+        latent_labels_onehot = latent_v_dist.sample()
+
+        concat_state = torch.cat([state, latent_labels_onehot], dim=-1)
         action_dist = self.decoder(concat_state)
-        return action_dist, latent_labels, latent_v_dist
+        return action_dist, latent_labels_onehot, latent_v_dist
+        # return action_dist, latent_labels_onehot, latent_v_dist, latent_loss
 
 
-    def compute_latent_loss(self, X, Delta_X, A, context_sample):
+    def compute_quantized_loss(self, state, delta_state, con_dim):
+        delta_state_enc = self.vq_encoder(delta_state)
+
+        latent_vq_dist = self.lmbd(delta_state_enc)
+
+        latent_labels = latent_vq_dist.sample()
+        print("Quantized Latent Labels", latent_labels)
+
+        encoder_output = self.prenet(delta_state_enc)
+        # print("Prenet output: ", encoder_output)
+        quantized, categorical_proposal = self.vector_quantizer(encoder_output)
+
+
+        # Straight Through Estimator (Some Magic)
+        st_quantized = encoder_output + (quantized - encoder_output).detach()
+        post_quantized = self.postnet(st_quantized)
+        # print("Post Quantized: ", post_quantized)
+
+        reconstruction = self.vq_decoder(post_quantized)
+        # print("Reconstruction: ", reconstruction)
+        # return encoder_output, quantized, reconstruction, latent_labels, latent_vq_dist
+
+        return encoder_output, quantized, reconstruction, categorical_proposal, latent_vq_dist
+
+
+    def compute_latent_loss(self, X, Delta_X, A, context_sample, con_dim, kl_beta=1.):
         """
         Given input tensor, forward propagate, compute the loss, and backward propagate.
         Represents the lifecycle of a single iteration
-        :param X: Input tensor
-        :return: total loss, reconstruction loss, kl-divergence loss and original input
+        :param x: Raw state tensor
+        :param delta_x: State difference tensor
+        :param a: Action tensor
+        :param context_sample: randomly generated one-hot encoded context label proposals
+        :param kl_beta: KL divergence temperance factor
 
         : Important to note that both recon and context loss cannot be negative.
         """
-        # decoded_action, latent_labels, logp_action = self(X, Delta_X)
-        action_dist, latent_labels, latent_labels_dist = self(X, Delta_X, A, context_sample)
-
-        latent_mean, latent_logvar = self.lmbd.latent_mean, self.lmbd.latent_logvar
-        kl_loss = -0.5 * torch.mean(1 + latent_logvar - latent_mean.pow(2) - latent_logvar.exp())
+        print("context sample ", context_sample)
 
 
+        action_dist, latent_labels, latent_labels_dist = self(X, Delta_X, con_dim)
+
+        encoder_output, quantized, reconstruction, vq_latent_labels, latent_vq_dist = self.compute_quantized_loss(X, Delta_X, A)
+        # vq_criterion = VQCriterion(beta=1.)
+        vq_criterion = VQCriterion(beta=kl_beta)
+
+        total_loss, recons_loss, vq_loss, commitment_loss = vq_criterion(Delta_X, encoder_output, quantized, reconstruction)
+
+        # action_dist, latent_labels, latent_labels_dist, latent_loss = self(X, Delta_X, con_dim)
+        # kl_loss = -0.5 * torch.mean(1 + latent_logvar - latent_mean.pow(2) - latent_logvar.exp())
         # get latent labels for checking accuracy
-        context_loss = 0.5 - latent_labels_dist.log_prob(context_sample)  # this is the correct version  ##
-        latent_mean, latent_logvar = self.lmbd.latent_mean, self.lmbd.latent_logvar
 
-        # # find a reward for having a distribution that matches actions well.
-        # sample_action = action_dist.sample()
-        # action_reward = F.mse_loss(sample_action, A)
-        # print("action reward: ", action_reward)
-        # print("Context sample: ", context_sample)
-        # print("Latent labels: ", latent_labels)
-        # print("Context loss: ", context_loss)
+        # context_loss = - latent_labels_dist.log_prob(context_sample) # this is the correct version  ##
+        context_loss = - latent_vq_dist.log_prob(context_sample)  # this is the correct version  ##
 
-        # recon_loss = -action_dist.log_prob(A).sum(axis=-1)  ## TODO: Remove negative sign somewhere. Done
-        recon_loss = torch.exp(action_dist.log_prob(A).sum(axis=-1)) + kl_loss  # TODO: Remove kl_loss
+        # I think that the reconstruction portion is essentially a VAE, so need kl_loss as well.
+        # Going to try the losses from the VQVAE quantization functions
 
-        # NOTE here: when policy is very different
-        print("kl loss: ", kl_loss)
+        recon_loss = total_loss * torch.exp(action_dist.log_prob(A).sum(axis=-1))*kl_beta # 0.00001 makes context loss increase slightly
+        # cannot remember what can make context_loss go up, but making recon loss negative does
+
+        print("context loss: ", context_loss)
         print("recon loss: ", recon_loss)
-        # loss = recon_loss * context_loss * action_reward
+        # loss = recon_loss * context_loss
         loss = recon_loss * context_loss
         print("loss: ", loss)
 
-        return loss, recon_loss, context_loss, X, latent_labels
+        # return loss, recon_loss, context_loss, X, latent_labels
+        return loss, recon_loss, context_loss, X, vq_latent_labels
 
 
 
@@ -833,11 +847,12 @@ class VQDecoder(nn.Module):
 
         self.net = nn.Sequential(
             nn.Linear(obs_dim, hidden_size),
-            nn.ReLU(inplace=True),
+            # nn.ReLU(inplace=True),
+            nn.Tanh(),
             nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(inplace=True),
-            Clamper(-10, 10),
-            nn.Sigmoid()
+            nn.Tanh(),
+            # Clamper(-10, 10),
+            # nn.Sigmoid()
         )
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return self.net(input)
@@ -854,24 +869,24 @@ class VectorQuantizer(nn.Module):
         self.embeddings = nn.Embedding(num_embeddings, embedding_dim)
 
         self.scale = 1. / self.num_embeddings
+        print("Quantizer Scale: ", self.scale)
         torch.nn.init.uniform_(self.embeddings.weight, -self.scale, self.scale)
 
     def proposal_distribution(self, input: torch.Tensor):
-        # input.shape == [B, C, H, W]
         # input = input.permute(0, 2, 3, 1)
+        # input.shape == [B, C, H, W] -> [B, H, W, C]
         input_shape = input.shape
 
         # .shape == [B * H * W, C]
-        # worth noting that each image has (H * W) codes
-        # (each code match some pixel) of size C
+        # worth noting that each image has (H * W) codes (each code match some pixel) of size C
         flatten_input = input.flatten(end_dim=-2).contiguous()
 
         distances = (flatten_input ** 2).sum(dim=1, keepdim=True)
         distances = distances + (self.embeddings.weight ** 2).sum(dim=1)
         distances -= 2 * flatten_input @ self.embeddings.weight.t()
 
-        categorical_posterior = torch.argmin(distances, dim=-1, keepdim=True) \
-            .view(input_shape[:-1])
+        categorical_posterior = torch.argmin(distances, dim=-1, keepdim=True).view(input_shape[:-1])
+        print("Categorical posterior: ", categorical_posterior)
 
         return categorical_posterior
 
@@ -880,7 +895,7 @@ class VectorQuantizer(nn.Module):
 
         quantized = self.embeddings(proposal).contiguous()
 
-        return quantized
+        return quantized, proposal
 
 
 class VQCriterion(nn.Module):
@@ -904,6 +919,7 @@ class VQCriterion(nn.Module):
         flatten_encoder_output = encoder_output.flatten(end_dim=-2)
 
         reconstruction_loss = F.mse_loss(input, reconstruction)
+
         vq_loss = F.mse_loss(flatten_encoder_output.detach(), flatten_quantized)
         commitment_loss = F.mse_loss(flatten_encoder_output, flatten_quantized.detach())
 
@@ -1084,18 +1100,11 @@ class VQVAELOR(nn.Module):
 
 
 
-
-
-########
-
 class MLPContextLabeler(Actor):
+
     # def __init__(self, obs_dim, context_dim, hidden_sizes, activation):
     def __init__(self, input_dim, context_dim, hidden_sizes, activation):
         super().__init__()
-        # log_std = -0.5 * np.ones(act_dim, dtype=np.float32)
-        # self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
-        # self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [context_dim], activation)
-
         self.logits_net = mlp([input_dim] + list(hidden_sizes) + [context_dim], activation)
 
     def _distribution(self, obs):
@@ -1117,6 +1126,8 @@ class MLPContextLabeler(Actor):
         return con
 
 
+
+########
 def latent_loss(z_mean, z_stddev):
     mean_sq = z_mean * z_mean
     stddev_sq = z_stddev * z_stddev

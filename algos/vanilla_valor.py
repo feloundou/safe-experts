@@ -9,16 +9,18 @@ import wandb.plot as wplot
 from torch.optim import Adam, SGD, lr_scheduler
 
 from neural_nets import VAELOR, ValorDiscriminator, VQVAELOR, VQCriterion
+
 from utils import mpi_fork, proc_id, num_procs, EpochLogger, \
-    setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars, MemoryBatch
+    setup_pytorch_for_mpi, sync_params, mpi_avg_grads, count_vars, MemoryBatch, \
+    frange_cycle_linear, frange_cycle_sigmoid
 
 
 ####################################################3
 
 def vanilla_valor(env_fn,
                   vae=VAELOR,
-                  vqvae=VQVAELOR,
-                  disc = ValorDiscriminator,
+                  # vqvae=VQVAELOR,
+                  disc=ValorDiscriminator,
                   dc_kwargs=dict(),
                   seed=0,
                   episodes_per_epoch=40,
@@ -63,18 +65,7 @@ def vanilla_valor(env_fn,
 
     # Model    # Create discriminator and monitor it
     con_dim = len(replay_buffers)
-    # valor_vae = vae(obs_dim=env.observation_space.shape[0], latent_dim=con_dim, act_dim=2)
-    valor_vae = vae(obs_dim=env.observation_space.shape[0], latent_dim=con_dim)
-
-    # valor_vqvae = vqvae(obs_dim=env.observation_space.shape[0], hidden_dim=20,
-    #     out_dim=60,  ##  dimensionality of each latent embedding vector
-    #     num_embeddings=2, # size of the discrete latent space
-    #     embedding_dim=2 # dimensionality of each latent embedding vector
-    #                     )
-
-    # beta = 1.0
-    # vq_criterion = VQCriterion(beta)
-    # vae_discrim = disc(input_dim=obs_dim[0], context_dim=con_dim, **dc_kwargs)
+    valor_vae = vae(obs_dim=obs_dim[0], latent_dim=con_dim, out_dim=act_dim[0])
 
     # Set up model saving
     logger.setup_pytorch_saver([valor_vae])
@@ -92,85 +83,59 @@ def vanilla_valor(env_fn,
     logger.log('\nNumber of parameters: \t d: %d\n' % var_counts)
 
     # Optimizers
+
     vae_optimizer = Adam(valor_vae.parameters(), lr=vae_lr)
-    # vq_optimizer = Adam(valor_vqvae.parameters(), vae_lr)
-    # context_optimizer = Adam(valor_vae.lmbd.parameters(), lr=vae_lr)
-    # action_optimizer = Adam(valor_vae.decoder.parameters(), lr=vae_lr)
+
+    vq_criterion = VQCriterion(beta=1.)
+    vq_optimizer = Adam(valor_vae.parameters(), vae_lr)
 
     start_time = time.time()
 
     # Prepare data
     mem = MemoryBatch(memories)
     transition_states, pure_states, transition_actions, expert_ids = mem.collate()
-
     valor_l_old, recon_l_old, context_l_old = 0, 0, 0
 
     # context_dist = OneHotCategorical(logits=torch.Tensor(np.ones(2)))
-    context_dist = Categorical(logits=torch.Tensor(np.ones(2)))
+    context_dist = Categorical(logits=torch.Tensor(np.ones(con_dim)))
 
-# Main Loop
+    # Main Loop
+    # kl_beta_schedule = frange_cycle_linear(epochs, n_cycle=10)
+    kl_beta_schedule = frange_cycle_sigmoid(epochs, n_cycle=5)
     for epoch in range(epochs):
-        # valor_vqvae.train()
-
         valor_vae.train()
         ##
-
         c = context_dist.sample()  # this causes context learning to collapse very quickly
         c_onehot = F.one_hot(c, con_dim).squeeze().float()
 
         o_tensor = context_dist.sample((train_batch_size,))
         o_onehot = F.one_hot(o_tensor, con_dim).squeeze().float()
 
-
         # Select state transitions and actions at random indexes
         batch_indexes = torch.randint(len(transition_states), (train_batch_size,))
+
         raw_states_batch, delta_states_batch, actions_batch, sampled_experts = \
            pure_states[batch_indexes], transition_states[batch_indexes], transition_actions[batch_indexes], expert_ids[batch_indexes]
 
         print("Expert IDs: ", sampled_experts)
+
         # Train the VAE encoder and decoder
-
-        min_loss = 1
-        iter=0
-
-        for _ in range(train_valor_iters):  # original
-            vae_optimizer.zero_grad()
-
+        for i in range(train_valor_iters):  # original
             # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
             #                                                                      actions_batch, c_onehot)
 
             loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
-                                                                                 actions_batch, o_onehot)
-            # loss.backward(torch.ones_like(loss))
-            # loss.sum().backward()
+                                                                                 actions_batch, o_onehot, con_dim, kl_beta_schedule[epoch])
+
+            vae_optimizer.zero_grad()
             loss.mean().backward()
             vae_optimizer.step()
-            min_loss = context_loss.mean().data.item()
-            iter += 1
-            # print("Epoch: \t", epoch, "\t Iter: \t", iter, "\t Context Loss: \t", min_loss, end='\n')
-
-            #######
-            # encoder_output, quantized, reconstruction = valor_vqvae(delta_states_batch)
-            # print("Encoder Output: ", encoder_output)
-            # total_loss, reconstruction_loss, vq_loss, commitment_loss = \
-            #                 vq_criterion(delta_states_batch, encoder_output, quantized, reconstruction)
-            #
-            # # print("Delta State 0! ", delta_states_batch[0])
-            # # print("Reconstruction 0! ", reconstruction[0])
-            # print("Quantized! 0", quantized)
-            # print("Loss! ", total_loss)
-            #
-            # vq_optimizer.zero_grad()
-            # total_loss.backward()
-            # vq_optimizer.step()
 
 
-
-
-        # valor_l_new, recon_l_new, context_l_new = loss.sum().data.item(), recon_loss.sum().data.item(), context_loss.sum().data.item()
         valor_l_new, recon_l_new, context_l_new = loss.mean().data.item(), recon_loss.mean().data.item(), context_loss.mean().data.item()
+        # valor_l_new, recon_l_new, context_l_new = total_loss, recon_loss, vq_loss
 
-        vaelor_metrics = {'VALOR Loss': valor_l_new, 'Recon Loss': recon_l_new, 'Context Loss': context_l_new}
+        vaelor_metrics = {'VALOR Loss': valor_l_new, 'Recon Loss': recon_l_new, 'Context Loss': context_l_new, "KL Beta": kl_beta_schedule[epoch]}
         wandb.log(vaelor_metrics)
 
         logger.store(VALORLoss=valor_l_new, PolicyLoss=recon_l_new, ContextLoss=context_l_new,
@@ -217,10 +182,27 @@ def vanilla_valor(env_fn,
 
     # Pass through VAELOR
     loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
-                                                                                 eval_actions_batch, fake_o_onehot)
+                                                                                 eval_actions_batch, fake_o_onehot, con_dim)
+
+    # loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_quantized_loss(eval_raw_states_batch,
+    #                                                                             eval_delta_states_batch,
+    #                                                                             eval_actions_batch, fake_o_onehot,
+    #                                                                             con_dim)
+    # loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch,
+    #                                                                             eval_delta_states_batch,
+    #                                                                             eval_actions_batch, fake_o, con_dim)
     # print("Latent V: ", latent_v)
-    predicted_expert_labels = np.argmax(latent_v, axis=1)  # convert from one-hot
+    vq_mode = True
+    if vq_mode == True:
+        # print("PREDICTIONS: ", latent_v)
+        latent_v[latent_v == 4] = 1 # vqvae indicates with 4, for some reason.
+        # print("again: ", latent_v)
+        predicted_expert_labels = latent_v
+    else:
+        predicted_expert_labels = np.argmax(latent_v, axis=1)  # convert from one-hot (if not quantized)
+
     ground_truth, predictions = eval_sampled_experts, predicted_expert_labels
+
     print("ground truth", ground_truth)
     print("predictions ", predictions)
 
@@ -229,88 +211,88 @@ def vanilla_valor(env_fn,
     wandb.log({"confusion_mat": wplot.confusion_matrix(
         y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
 
-    print("RUNNING POLICY EVAL")  # unroll and plot a full episode
-    # (for now, selecting first episode in first memory)
-    # pick some arbitary  episode starting point. Where does the episode start, and follow the episode for
-
-    eval_observations, eval_actions, _, _ = memories[0].sample()
-    one_ep_states, one_ep_actions = eval_observations[:1000], eval_actions[:1000]
-    x_actions, y_actions = map(list, zip(*one_ep_actions))
-    ep_time = torch.arange(1000)
-
-    # Plot expert steps and actions
-    x_expert_data = [[x, y] for (x, y) in zip(ep_time, x_actions)]
-    y_expert_data = [[x, y] for (x, y) in zip(ep_time, y_actions)]
-
-    x_table, y_table = wandb.Table(data=x_expert_data, columns=["x", "y"]), wandb.Table(data=y_expert_data, columns=["x", "y"]),
-
-    # Collect learner experiences, give the network a state observation and a fixed label tensor
-    learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], F.one_hot(torch.as_tensor(0), con_dim).float(), \
-                                                F.one_hot(torch.as_tensor(1), con_dim).float()  # TODO: vary tensor_tag
-
-    for step in range(1000):
-        action_dist0 = valor_vae.decoder(torch.cat([one_ep_states[step], tensor_tag0], dim=-1))
-        action_dist1 = valor_vae.decoder(torch.cat([one_ep_states[step], tensor_tag1], dim=-1))
-
-        sampled_action0, sampled_action1 = action_dist0.sample(), action_dist1.sample()
-        learner_actions0.append(sampled_action0)
-        learner_actions1.append(sampled_action1)
-
-    learner_x_actions0, learner_y_actions0 = map(list, zip(*learner_actions0))
-    learner_x_actions1, learner_y_actions1 = map(list, zip(*learner_actions1))
-
-    x_learner_data0 = [[x, y] for (x, y) in zip(ep_time, learner_x_actions0)]
-    y_learner_data0 = [[x, y] for (x, y) in zip(ep_time, learner_y_actions0)]
-
-    x_learner_data1 = [[x, y] for (x, y) in zip(ep_time, learner_x_actions1)]
-    y_learner_data1 = [[x, y] for (x, y) in zip(ep_time, learner_y_actions1)]
-
-    learner_x_table0, learner_y_table0 = wandb.Table(data=x_learner_data0, columns=["x", "y"]), \
-                                       wandb.Table(data=y_learner_data0, columns=["x", "y"])
-
-    learner_x_table1, learner_y_table1 = wandb.Table(data=x_learner_data1, columns=["x", "y"]), \
-                                         wandb.Table(data=y_learner_data1, columns=["x", "y"])
-
-
-    wandb.log({"Tracing Dimension 1": wandb.plot.scatter(x_table, "x", "y",
-                                                       title="Expert Behavior over Time (X plane)"),
-               "Tracing Dimension 2": wandb.plot.scatter(y_table, "x", "y",
-                                                          title="Expert Behavior over Time (Y plane)"),
-               "Learner0 Tracing Dimension 1": wandb.plot.scatter(learner_x_table0, "x", "y",
-                                                         title="Student [0] Behavior over Time (X plane)"),
-               "Learner0 Tracing Dimension 2": wandb.plot.scatter(learner_y_table0, "x", "y",
-                                                         title="Student [0] Behavior over Time (Y plane)"),
-               "Learner1 Tracing Dimension 1": wandb.plot.scatter(learner_x_table1, "x", "y",
-                                                                 title="Student [1] Behavior over Time (X plane)"),
-               "Learner1 Tracing Dimension 2": wandb.plot.scatter(learner_y_table1, "x", "y",
-                                                                 title="Student [1] Behavior over Time (Y plane)")
-               })
-
-    # # Log points and boxes
-
-    # point_cloud = np.array([[0, 0, 0, 0], ...])
-    # wandb.log({"point_cloud": wandb.Object3D(point_cloud)})
-
-    # wandb.log({
-    #         "point_scene": wandb.Object3D(
-    #             {"type": "lidar/beta",
-    #              "points": np.array([
-    #                         [0.4, 1, 1.3],
-    #                         [1, 1, 1],
-    #                         [1.2, 1, 1.2]]),
-    #               "boxes": np.array([{"corners": [
-    #                                 [0, 0, 0], [0, 1, 0], [0, 0, 1],
-    #                                 [1, 0, 0], [1, 1, 0], [0, 1, 1],
-    #                                 [1, 0, 1], [1, 1, 1]],
-    #                             "label": "Box",
-    #                             "color": [123, 321, 111],},
-    #                         {"corners": [
-    #                                 [0, 0, 0], [0, 2, 0], [0, 0, 2],
-    #                                 [2, 0, 0], [2, 2, 0], [0, 2, 2],
-    #                                 [2, 0, 2], [2, 2, 2]],
-    #                             "label": "Box-2",
-    #                             "color": [111, 321, 0],}]
-    #                 ),})})
+#     print("RUNNING POLICY EVAL")  # unroll and plot a full episode
+#     # (for now, selecting first episode in first memory)
+#     # pick some arbitary  episode starting point. Where does the episode start, and follow the episode for
+#
+#     eval_observations, eval_actions, _, _ = memories[0].sample()
+#     one_ep_states, one_ep_actions = eval_observations[:1000], eval_actions[:1000]
+#     x_actions, y_actions = map(list, zip(*one_ep_actions))
+#     ep_time = torch.arange(1000)
+#
+#     # Plot expert steps and actions
+#     x_expert_data = [[x, y] for (x, y) in zip(ep_time, x_actions)]
+#     y_expert_data = [[x, y] for (x, y) in zip(ep_time, y_actions)]
+#
+#     x_table, y_table = wandb.Table(data=x_expert_data, columns=["x", "y"]), wandb.Table(data=y_expert_data, columns=["x", "y"]),
+#
+#     # Collect learner experiences, give the network a state observation and a fixed label tensor
+#     learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], F.one_hot(torch.as_tensor(0), con_dim).float(), \
+#                                                 F.one_hot(torch.as_tensor(1), con_dim).float()  # TODO: vary tensor_tag
+#
+#     for step in range(1000):
+#         action_dist0 = valor_vae.decoder(torch.cat([one_ep_states[step], tensor_tag0], dim=-1))
+#         action_dist1 = valor_vae.decoder(torch.cat([one_ep_states[step], tensor_tag1], dim=-1))
+#
+#         sampled_action0, sampled_action1 = action_dist0.sample(), action_dist1.sample()
+#         learner_actions0.append(sampled_action0)
+#         learner_actions1.append(sampled_action1)
+#
+#     learner_x_actions0, learner_y_actions0 = map(list, zip(*learner_actions0))
+#     learner_x_actions1, learner_y_actions1 = map(list, zip(*learner_actions1))
+#
+#     x_learner_data0 = [[x, y] for (x, y) in zip(ep_time, learner_x_actions0)]
+#     y_learner_data0 = [[x, y] for (x, y) in zip(ep_time, learner_y_actions0)]
+#
+#     x_learner_data1 = [[x, y] for (x, y) in zip(ep_time, learner_x_actions1)]
+#     y_learner_data1 = [[x, y] for (x, y) in zip(ep_time, learner_y_actions1)]
+#
+#     learner_x_table0, learner_y_table0 = wandb.Table(data=x_learner_data0, columns=["x", "y"]), \
+#                                        wandb.Table(data=y_learner_data0, columns=["x", "y"])
+#
+#     learner_x_table1, learner_y_table1 = wandb.Table(data=x_learner_data1, columns=["x", "y"]), \
+#                                          wandb.Table(data=y_learner_data1, columns=["x", "y"])
+#
+#
+#     wandb.log({"Tracing Dimension 1": wandb.plot.scatter(x_table, "x", "y",
+#                                                        title="Expert Behavior over Time (X plane)"),
+#                "Tracing Dimension 2": wandb.plot.scatter(y_table, "x", "y",
+#                                                           title="Expert Behavior over Time (Y plane)"),
+#                "Learner0 Tracing Dimension 1": wandb.plot.scatter(learner_x_table0, "x", "y",
+#                                                          title="Student [0] Behavior over Time (X plane)"),
+#                "Learner0 Tracing Dimension 2": wandb.plot.scatter(learner_y_table0, "x", "y",
+#                                                          title="Student [0] Behavior over Time (Y plane)"),
+#                "Learner1 Tracing Dimension 1": wandb.plot.scatter(learner_x_table1, "x", "y",
+#                                                                  title="Student [1] Behavior over Time (X plane)"),
+#                "Learner1 Tracing Dimension 2": wandb.plot.scatter(learner_y_table1, "x", "y",
+#                                                                  title="Student [1] Behavior over Time (Y plane)")
+#                })
+#
+#     # # Log points and boxes
+#
+#     # point_cloud = np.array([[0, 0, 0, 0], ...])
+#     # wandb.log({"point_cloud": wandb.Object3D(point_cloud)})
+#
+#     # wandb.log({
+#     #         "point_scene": wandb.Object3D(
+#     #             {"type": "lidar/beta",
+#     #              "points": np.array([
+#     #                         [0.4, 1, 1.3],
+#     #                         [1, 1, 1],
+#     #                         [1.2, 1, 1.2]]),
+#     #               "boxes": np.array([{"corners": [
+#     #                                 [0, 0, 0], [0, 1, 0], [0, 0, 1],
+#     #                                 [1, 0, 0], [1, 1, 0], [0, 1, 1],
+#     #                                 [1, 0, 1], [1, 1, 1]],
+#     #                             "label": "Box",
+#     #                             "color": [123, 321, 111],},
+#     #                         {"corners": [
+#     #                                 [0, 0, 0], [0, 2, 0], [0, 0, 2],
+#     #                                 [2, 0, 0], [2, 2, 0], [0, 2, 2],
+#     #                                 [2, 0, 2], [2, 2, 2]],
+#     #                             "label": "Box-2",
+#     #                             "color": [111, 321, 0],}]
+#     #                 ),})})
 
     wandb.finish()
 
