@@ -7,6 +7,12 @@ from torch.distributions import Independent, OneHotCategorical, Categorical
 import torch.nn.functional as F
 import wandb.plot as wplot
 from torch.optim import Adam, SGD, lr_scheduler
+import numpy as np
+from matplotlib import animation
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
+
+import matplotlib.pyplot as plt
 
 from neural_nets import VAELOR, ValorDiscriminator, VQVAELOR, VQCriterion
 
@@ -19,17 +25,15 @@ from utils import mpi_fork, proc_id, num_procs, EpochLogger, \
 
 def vanilla_valor(env_fn,
                   vae=VAELOR,
-                  # vqvae=VQVAELOR,
-                  disc=ValorDiscriminator,
-                  dc_kwargs=dict(),
+                  vaelor_kwargs=dict(),
+                  annealing_kwargs=dict(),
                   seed=0,
                   episodes_per_epoch=40,
                   epochs=50,
-                  # vae_lr=3e-4,
-                  vae_lr = 1e-3,
-                  train_batch_size = 50,
+                  vae_lr=1e-3,
+                  train_batch_size=50,
                   eval_batch_size=200,
-                  train_valor_iters=200,
+                  # train_valor_iters=200,
                   max_ep_len=1000,
                   logger_kwargs=dict(),
                   config_name='standard',
@@ -37,8 +41,11 @@ def vanilla_valor(env_fn,
     # W&B Logging
     wandb.login()
 
-    composite_name = str(epochs) + 'epochs_' + str(train_batch_size) + 'batch_' + str(train_valor_iters) + 'iters'
-    wandb.init(project="Vanilla Valor", group='Epochs: ' + str(epochs), name=composite_name)
+    composite_name = str(epochs) + 'epochs_' + str(train_batch_size) + 'batch_' + \
+                     str(vaelor_kwargs['encoder_hidden']) + 'enc_' + str(vaelor_kwargs['decoder_hidden']) + 'dec'
+
+    wandb.init(project="VQ VAELOR", group='Epochs: ' + str(epochs),
+               name=composite_name, config=locals())
 
     assert replay_buffers != [], "Replay buffers must be set"
 
@@ -64,8 +71,11 @@ def vanilla_valor(env_fn,
     #     print("Hello %s, welcome to playing with VAELOR" % name)
 
     # Model    # Create discriminator and monitor it
+
     con_dim = len(replay_buffers)
-    valor_vae = vae(obs_dim=obs_dim[0], latent_dim=con_dim, out_dim=act_dim[0])
+    # con_dim = 10
+    # con_dim = 1
+    valor_vae = vae(obs_dim=obs_dim[0], latent_dim=con_dim, out_dim=act_dim[0], **vaelor_kwargs)
 
     # Set up model saving
     logger.setup_pytorch_saver([valor_vae])
@@ -86,13 +96,11 @@ def vanilla_valor(env_fn,
 
     vae_optimizer = Adam(valor_vae.parameters(), lr=vae_lr)
 
-    vq_criterion = VQCriterion(beta=1.)
-    vq_optimizer = Adam(valor_vae.parameters(), vae_lr)
-
     start_time = time.time()
 
     # Prepare data
     mem = MemoryBatch(memories)
+
     transition_states, pure_states, transition_actions, expert_ids = mem.collate()
     valor_l_old, recon_l_old, context_l_old = 0, 0, 0
 
@@ -101,12 +109,12 @@ def vanilla_valor(env_fn,
 
     # Main Loop
     # kl_beta_schedule = frange_cycle_linear(epochs, n_cycle=10)
-    kl_beta_schedule = frange_cycle_sigmoid(epochs, n_cycle=5)
+    kl_beta_schedule = frange_cycle_sigmoid(epochs, **annealing_kwargs)
     for epoch in range(epochs):
         valor_vae.train()
         ##
-        c = context_dist.sample()  # this causes context learning to collapse very quickly
-        c_onehot = F.one_hot(c, con_dim).squeeze().float()
+        # c = context_dist.sample()  # this causes context learning to collapse very quickly
+        # c_onehot = F.one_hot(c, con_dim).squeeze().float()
 
         o_tensor = context_dist.sample((train_batch_size,))
         o_onehot = F.one_hot(o_tensor, con_dim).squeeze().float()
@@ -120,17 +128,20 @@ def vanilla_valor(env_fn,
         print("Expert IDs: ", sampled_experts)
 
         # Train the VAE encoder and decoder
-        for i in range(train_valor_iters):  # original
+        # for i in range(train_valor_iters):  # original
             # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
             #                                                                      actions_batch, c_onehot)
 
-            loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
-                                                                                 actions_batch, o_onehot, con_dim, kl_beta_schedule[epoch])
+        loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
+                                                                             actions_batch, o_onehot, con_dim, kl_beta_schedule[epoch])
 
-            vae_optimizer.zero_grad()
-            loss.mean().backward()
-            vae_optimizer.step()
+        # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
+        #                                                                      actions_batch, o_tensor, con_dim,
+        #                                                                      kl_beta_schedule[epoch])
 
+        vae_optimizer.zero_grad()
+        loss.mean().backward()
+        vae_optimizer.step()
 
         valor_l_new, recon_l_new, context_l_new = loss.mean().data.item(), recon_loss.mean().data.item(), context_loss.mean().data.item()
         # valor_l_new, recon_l_new, context_l_new = total_loss, recon_loss, vq_loss
@@ -149,7 +160,7 @@ def vanilla_valor(env_fn,
         if (epoch % save_freq == 0) or (epoch == epochs - 1):
             logger.save_state({'env': env}, [valor_vae], None)
 
-        # # Log
+        # Log
         logger.log_tabular('Epoch', epoch)
         logger.log_tabular('EpochBatchSize', train_batch_size)
         logger.log_tabular('VALORLoss', average_only=True)
@@ -184,10 +195,6 @@ def vanilla_valor(env_fn,
     loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
                                                                                  eval_actions_batch, fake_o_onehot, con_dim)
 
-    # loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_quantized_loss(eval_raw_states_batch,
-    #                                                                             eval_delta_states_batch,
-    #                                                                             eval_actions_batch, fake_o_onehot,
-    #                                                                             con_dim)
     # loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch,
     #                                                                             eval_delta_states_batch,
     #                                                                             eval_actions_batch, fake_o, con_dim)
@@ -195,7 +202,7 @@ def vanilla_valor(env_fn,
     vq_mode = True
     if vq_mode == True:
         # print("PREDICTIONS: ", latent_v)
-        latent_v[latent_v == 4] = 1 # vqvae indicates with 4, for some reason.
+        # latent_v[latent_v == 4] = 1 # vqvae indicates with 4, for some reason.  (try with all categories)
         # print("again: ", latent_v)
         predicted_expert_labels = latent_v
     else:
@@ -203,96 +210,115 @@ def vanilla_valor(env_fn,
 
     ground_truth, predictions = eval_sampled_experts, predicted_expert_labels
 
-    print("ground truth", ground_truth)
-    print("predictions ", predictions)
+    print("ground truth", np.array(ground_truth))
+    print("predictions ", np.array(predictions))
 
     # Confusion matrix
-    class_names = ["0", "1"]
+    class_names = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
     wandb.log({"confusion_mat": wplot.confusion_matrix(
         y_true=np.array(ground_truth), preds=np.array(predictions), class_names=class_names)})
 
-#     print("RUNNING POLICY EVAL")  # unroll and plot a full episode
-#     # (for now, selecting first episode in first memory)
-#     # pick some arbitary  episode starting point. Where does the episode start, and follow the episode for
-#
-#     eval_observations, eval_actions, _, _ = memories[0].sample()
-#     one_ep_states, one_ep_actions = eval_observations[:1000], eval_actions[:1000]
-#     x_actions, y_actions = map(list, zip(*one_ep_actions))
-#     ep_time = torch.arange(1000)
-#
-#     # Plot expert steps and actions
-#     x_expert_data = [[x, y] for (x, y) in zip(ep_time, x_actions)]
-#     y_expert_data = [[x, y] for (x, y) in zip(ep_time, y_actions)]
-#
-#     x_table, y_table = wandb.Table(data=x_expert_data, columns=["x", "y"]), wandb.Table(data=y_expert_data, columns=["x", "y"]),
-#
-#     # Collect learner experiences, give the network a state observation and a fixed label tensor
-#     learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], F.one_hot(torch.as_tensor(0), con_dim).float(), \
-#                                                 F.one_hot(torch.as_tensor(1), con_dim).float()  # TODO: vary tensor_tag
-#
-#     for step in range(1000):
-#         action_dist0 = valor_vae.decoder(torch.cat([one_ep_states[step], tensor_tag0], dim=-1))
-#         action_dist1 = valor_vae.decoder(torch.cat([one_ep_states[step], tensor_tag1], dim=-1))
-#
-#         sampled_action0, sampled_action1 = action_dist0.sample(), action_dist1.sample()
-#         learner_actions0.append(sampled_action0)
-#         learner_actions1.append(sampled_action1)
-#
-#     learner_x_actions0, learner_y_actions0 = map(list, zip(*learner_actions0))
-#     learner_x_actions1, learner_y_actions1 = map(list, zip(*learner_actions1))
-#
-#     x_learner_data0 = [[x, y] for (x, y) in zip(ep_time, learner_x_actions0)]
-#     y_learner_data0 = [[x, y] for (x, y) in zip(ep_time, learner_y_actions0)]
-#
-#     x_learner_data1 = [[x, y] for (x, y) in zip(ep_time, learner_x_actions1)]
-#     y_learner_data1 = [[x, y] for (x, y) in zip(ep_time, learner_y_actions1)]
-#
-#     learner_x_table0, learner_y_table0 = wandb.Table(data=x_learner_data0, columns=["x", "y"]), \
-#                                        wandb.Table(data=y_learner_data0, columns=["x", "y"])
-#
-#     learner_x_table1, learner_y_table1 = wandb.Table(data=x_learner_data1, columns=["x", "y"]), \
-#                                          wandb.Table(data=y_learner_data1, columns=["x", "y"])
-#
-#
-#     wandb.log({"Tracing Dimension 1": wandb.plot.scatter(x_table, "x", "y",
-#                                                        title="Expert Behavior over Time (X plane)"),
-#                "Tracing Dimension 2": wandb.plot.scatter(y_table, "x", "y",
-#                                                           title="Expert Behavior over Time (Y plane)"),
-#                "Learner0 Tracing Dimension 1": wandb.plot.scatter(learner_x_table0, "x", "y",
-#                                                          title="Student [0] Behavior over Time (X plane)"),
-#                "Learner0 Tracing Dimension 2": wandb.plot.scatter(learner_y_table0, "x", "y",
-#                                                          title="Student [0] Behavior over Time (Y plane)"),
-#                "Learner1 Tracing Dimension 1": wandb.plot.scatter(learner_x_table1, "x", "y",
-#                                                                  title="Student [1] Behavior over Time (X plane)"),
-#                "Learner1 Tracing Dimension 2": wandb.plot.scatter(learner_y_table1, "x", "y",
-#                                                                  title="Student [1] Behavior over Time (Y plane)")
-#                })
-#
-#     # # Log points and boxes
-#
-#     # point_cloud = np.array([[0, 0, 0, 0], ...])
-#     # wandb.log({"point_cloud": wandb.Object3D(point_cloud)})
-#
-#     # wandb.log({
-#     #         "point_scene": wandb.Object3D(
-#     #             {"type": "lidar/beta",
-#     #              "points": np.array([
-#     #                         [0.4, 1, 1.3],
-#     #                         [1, 1, 1],
-#     #                         [1.2, 1, 1.2]]),
-#     #               "boxes": np.array([{"corners": [
-#     #                                 [0, 0, 0], [0, 1, 0], [0, 0, 1],
-#     #                                 [1, 0, 0], [1, 1, 0], [0, 1, 1],
-#     #                                 [1, 0, 1], [1, 1, 1]],
-#     #                             "label": "Box",
-#     #                             "color": [123, 321, 111],},
-#     #                         {"corners": [
-#     #                                 [0, 0, 0], [0, 2, 0], [0, 0, 2],
-#     #                                 [2, 0, 0], [2, 2, 0], [0, 2, 2],
-#     #                                 [2, 0, 2], [2, 2, 2]],
-#     #                             "label": "Box-2",
-#     #                             "color": [111, 321, 0],}]
-#     #                 ),})})
+    print("RUNNING POLICY EVAL")  # unroll and plot a full episode
+    # (for now, selecting first episode in first memory)
+    # pick some arbitary  episode starting point. Where does the episode start, and follow the episode for
+
+    eval_observations, eval_actions, _, _ = memories[0].sample()
+    one_ep_states, one_ep_actions = eval_observations[:1000], eval_actions[:1000]
+    x_actions, y_actions = map(list, zip(*one_ep_actions))
+
+    ep_time = torch.arange(1000)
+
+    # Plot expert steps and actions
+    x_expert_data = [[x, y] for (x, y) in zip(ep_time, x_actions)]
+    y_expert_data = [[x, y] for (x, y) in zip(ep_time, y_actions)]
+
+    x_table, y_table = wandb.Table(data=x_expert_data, columns=["x", "y"]), wandb.Table(data=y_expert_data, columns=["x", "y"]),
+
+    # Collect learner experiences, give the network a state observation and a fixed label tensor
+    expert_idx_list = np.arange(10)
+    print("expert indices", expert_idx_list)
+    # expert_idx_one_hot = [F.one_hot(torch.as_tensor(i), 10) for i in expert_idx_list]
+    # ## TODO: Change this 10 to con_dim (for now con_dim conflicts with categorical posteriors)
+    # print("one hot experts: ", expert_idx_one_hot)
+
+    # learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], F.one_hot(torch.as_tensor(0), con_dim).float(), \
+    #                                             F.one_hot(torch.as_tensor(1), con_dim).float()  # TODO: vary tensor_tag
+
+    learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], torch.as_tensor(0), torch.as_tensor(1)  # TODO: vary tensor_tag
+
+    LearnerActions = [[] for i in range(10)]
+    ExpertTypeTensors = [torch.reshape(torch.as_tensor(i), (-1,)) for i in expert_idx_list]
+    Learner_X_Actions, Learner_Y_Actions, Learner_Data_X_Time, Learner_Data_Y_Time, Learner_X_Table, Learner_Y_Table = \
+        [], [], [], [], [], []
+
+    for step in range(1000):
+        # ActionDists = [valor_vae.decoder(torch.cat([one_ep_states[step], ExpertTypeTensors[k]], dim=-1)) for k in range(10)]
+        for k in range(10):
+            ActionDist = valor_vae.decoder(torch.cat([one_ep_states[step], ExpertTypeTensors[k]], dim=-1))
+            LearnerActions[k].append(ActionDist.sample())
+
+    for k in range(10):
+        X, Y = map(list, zip(*LearnerActions[k]))
+        # Learner_X_Actions.append(X)
+        # Learner_Y_Actions.append(Y)
+        # Learner_Data_X_Time.append([[x, y] for (x, y) in zip(ep_time, X)])
+        # Learner_Data_Y_Time.append([[x, y] for (x, y) in zip(ep_time, Y)])
+        # Learner_X_Table.append(wandb.Table(data=Learner_Data_X_Time[k], columns=["x", "y"]))
+        # Learner_Y_Table.append(wandb.Table(data=Learner_Data_Y_Time[k], columns=["x", "y"]))
+        Learner_X_Table.append(wandb.Table(data=[[x, y] for (x, y) in zip(ep_time, X)], columns=["x", "y"]))
+        Learner_Y_Table.append(wandb.Table(data=[[x, y] for (x, y) in zip(ep_time, Y)], columns=["x", "y"]))
+
+
+    wandb.log({"Tracing Dimension 1": wandb.plot.scatter(x_table, "x", "y",  title="Expert (X plane)"),
+               "Tracing Dimension 2": wandb.plot.scatter(y_table, "x", "y",  title="Expert (Y plane)"),
+               "Learner0 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[0], "x", "y", title="Student [0] (X plane)"),
+               "Learner0 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[0], "x", "y", title="Student [0] (Y plane)"),
+               "Learner1 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[1], "x", "y", title="Student [1] (X plane)"),
+               "Learner1 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[1], "x", "y", title="Student [1] (Y plane)"),
+               "Learner2 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[2], "x", "y", title="Student [2] (X plane)"),
+               "Learner2 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[2], "x", "y", title="Student [2] (Y plane)"),
+               "Learner3 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[3], "x", "y", title="Student [3] (X plane)"),
+               "Learner3 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[3], "x", "y", title="Student [3] (Y plane)"),
+               "Learner4 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[4], "x", "y", title="Student [4] (X plane)"),
+               "Learner4 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[4], "x", "y", title="Student [4] (Y plane)"),
+               "Learner5 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[5], "x", "y", title="Student [5] (X plane)"),
+               "Learner5 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[5], "x", "y", title="Student [5] (Y plane)"),
+               "Learner6 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[6], "x", "y", title="Student [6] (X plane)"),
+               "Learner6 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[6], "x", "y", title="Student [6] (Y plane)"),
+               "Learner7 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[7], "x", "y", title="Student [7] (X plane)"),
+               "Learner7 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[7], "x", "y", title="Student [7] (Y plane)"),
+               "Learner8 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[8], "x", "y", title="Student [8] (X plane)"),
+               "Learner8 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[8], "x", "y", title="Student [8] (Y plane)"),
+               "Learner9 Tracing Dimension 1": wandb.plot.scatter(Learner_X_Table[9], "x", "y", title="Student [9] (X plane)"),
+               "Learner9 Tracing Dimension 2": wandb.plot.scatter(Learner_Y_Table[9], "x", "y", title="Student [9] (Y plane)"),
+               })
+
+    # # Log points and boxes
+    # # Create a figure and a 3D Axes
+    # fig = plt.figure()
+    # ax = Axes3D(fig)
+    #
+    # # Create an init function and the animate functions.
+    # # Since we are changing the elevation and azimuth and no objects are really changed
+    # # on the plot we don't have to return anything from the init and animate function.
+    # def init1():
+    #     ax.scatter(learner_x_actions0, ep_time, learner_y_actions0, c=ep_time,
+    #                cmap='viridis', linewidth=0.5, alpha=0.6);
+    #     return fig,
+    #
+    # def animate(i):
+    #     ax.view_init(elev=10., azim=i)
+    #     return fig,
+    #
+    # # Animate
+    # anim = animation.FuncAnimation(fig, animate, init_func=init1,
+    #                                frames=360, interval=20, blit=True)
+    # # Save
+    # f = r"/home/tyna/Documents/safe-experts/algos/student1_animation.mp4"
+    # writervideo = animation.FFMpegWriter(fps=60)
+    # anim.save(f, writer=writervideo)
+    #
+    # wandb.log({"Student 1": wandb.Video("/home/tyna/Documents/safe-experts/algos/student1_animation.mp4")})
 
     wandb.finish()
 

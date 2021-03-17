@@ -451,7 +451,6 @@ class SinglePathSimulator:
 
                 for env, action, trajectory in zip(continuing_envs, actions, trajs_to_update):
                     traj_count += 1
-                    # print("num traj:", traj_count)
 
                     # print("the actions observed: ", action.numpy())
                     if render:
@@ -511,6 +510,7 @@ class ExpertSinglePathSimulator:
                 old_obs=obs
 
             while np.any(continue_mask):
+                ep_cost, ep_reward = 0, 0
                 continue_indices = np.where(continue_mask)
                 trajs_to_update = trajectories[continue_indices]
                 continuing_envs = self.env[continue_indices]
@@ -519,6 +519,7 @@ class ExpertSinglePathSimulator:
                                             for trajectory in trajs_to_update])
 
                 action_dists = self.policy(policy_input)
+
                 if sampling_mode:
                     actions = action_dists.sample()
                     actions = actions.cpu()
@@ -534,11 +535,7 @@ class ExpertSinglePathSimulator:
 
                     obs = torch.tensor(obs).float()
                     reward = torch.tensor(reward, dtype=torch.float)
-                    # cost = torch.tensor(info['constraint_cost'], dtype=torch.float) #Tyna Note
                     cost = torch.tensor(info['cost_hazards'], dtype=torch.float)
-                    # print("costs: ", cost)
-
-                    # print("next obs traj", trajectory.next_observations)
 
                     if self.obs_filter:
                         obs = self.obs_filter(obs)

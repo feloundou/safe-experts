@@ -166,7 +166,7 @@ def valor_penalized(env_fn, actor_critic=ActorCritic, ac_kwargs=dict(),
             dc_l_new = 0
 
         # Log the changes
-        print("logging changes")
+        # print("logging changes")
         _, logp, _, v = ac(obs, act)
         # _, logp, _ = ac.pi(obs, act)
         pi_l_new = -(logp * (k * adv + pos)).mean()

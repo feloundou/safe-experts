@@ -1553,8 +1553,11 @@ class MemoryBatch:
 
 
     def collate(self):
+        "Collates trajectories/episodes/memories from different experts"
         for k in range(self.size):
-            expert_states, expert_actions, _, _, expert_next_states, _ = self.memories[k].sample(next=True)
+            expert_states, expert_actions, _, expert_costs, expert_next_states, _ = self.memories[k].sample(next=True)
+
+            print("Episode costs: ", torch.cumsum(expert_costs, dim=-1))
 
             # Exclude the last step of each episode to calculate state differences
             t_states = torch.stack(
@@ -1591,6 +1594,7 @@ class MemoryBatch:
 
 
     def eval_batch(self, N_expert, eval_batch_size, episodes_per_epoch):
+        # evaluation batch, randomized
         eval_batch_index = None
 
         for i in range(len(self.memories)):

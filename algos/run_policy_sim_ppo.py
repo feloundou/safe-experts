@@ -74,7 +74,7 @@ def load_pytorch_policy(fpath, itr, deterministic=False):
     return get_action
 
 
-def run_policy(env, get_action, max_ep_len=None, num_episodes=100, render=True, record=False, record_project= 'benchmarking', record_name = 'trained' , data_path='', config_name='test', max_len_rb=100, benchmark=False, log_prefix=''):
+def run_policy(env, get_action, max_ep_len=None, num_episodes=100, render=True, record=False, record_project='benchmarking', record_name='trained', data_path='', config_name='test', max_len_rb=100, benchmark=False, log_prefix=''):
     assert env is not None, \
         "Environment not found!\n\n It looks like the environment wasn't saved, " + \
         "and we can't run the agent in it. :( \n\n Check out the readthedocs " + \
@@ -140,8 +140,6 @@ def run_policy(env, get_action, max_ep_len=None, num_episodes=100, render=True, 
                 # make directory if does not exist
                 if not os.path.exists(data_path + config_name + '_episodes'):
                     os.makedirs(data_path + config_name + '_episodes')
-
-                # buf = CostPOBuffer(obs_dim, act_dim, local_steps_per_epoch, 0.99, 0.99)
 
             if len(rew_mov_avg_10) >= 25:
                 rew_mov_avg_10.pop(0)

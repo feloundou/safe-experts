@@ -343,7 +343,7 @@ class Expert(Agent):
                 wandb.finish()
 
 
-    def run_expert_sim(self, env, get_from_file, expert_episodes=1000, replay_buffer_size=10000):
+    def run_expert_sim(self, env, get_from_file, max_cost=None, min_reward=None, expert_episodes=1000, replay_buffer_size=10000):
 
         obs_dim = env.observation_space.shape
         act_dim = env.action_space.shape
@@ -351,7 +351,6 @@ class Expert(Agent):
         print("Now adding trajectories to memory")
 
         n_trajectories = expert_episodes
-        print("N trajectories: ", n_trajectories)
         trajectory_len = 1000
 
         if get_from_file:
@@ -406,19 +405,19 @@ class Expert(Agent):
             # Load trained policy
             _, expert_pi = load_policy_and_env(osp.join(self._root_data_path, self.file_name, self.file_name + '_s0/'),
                                                 'last', False)
-            expert_rb = run_policy(env,
-                                   expert_pi,
-                                   0,
-                                   expert_episodes,
-                                   False,
-                                   record=not get_from_file,
-                                   record_name='expert_' + self.file_name + '_' + str(expert_episodes) + '_runs',
-                                   record_project='clone_benchmarking_' + self.config_name,
-                                   data_path=self._expert_path,
-                                   config_name=self.config_name,
-                                   max_len_rb=replay_buffer_size)
-
-            self.replay_buffer = expert_rb
+            # expert_rb = run_policy(env,
+            #                        expert_pi,
+            #                        max_ep_len=0,
+            #                        num_episodes=expert_episodes,
+            #                        render=False,
+            #                        record=not get_from_file,
+            #                        record_name='expert_' + self.file_name + '_' + str(expert_episodes) + '_runs',
+            #                        record_project='clone_benchmarking_' + self.config_name,
+            #                        data_path=self._expert_path,
+            #                        config_name=self.config_name,
+            #                        max_len_rb=replay_buffer_size)
+            #
+            # self.replay_buffer = expert_rb
 
             print("Hello, Simulator for !", self.config_name)
 
@@ -427,6 +426,17 @@ class Expert(Agent):
 
             print("running the simulation and saving to 'memory' ")
             self.memory = self.simulator.run_sim(sampling_mode=False)
+
+            all_rewards, all_costs = [], []
+
+            for k in range(n_trajectories):
+                all_rewards.append(torch.stack(self.memory[k].rewards, dim=0).sum(dim=0).item())
+                all_costs.append(torch.stack(self.memory[k].costs, dim=0).sum(dim=0).item())
+
+
+            print("All memory rewards: ",  [round(num, 2) for num in all_rewards] )
+            print("All memory costs: ", [round(num, 2) for num in all_costs])
+
 
             # Save to pickle
             bufname_pk = self._expert_path + self.config_name + '_episodes/memory_data_' + str(int(n_trajectories)) + '_buffer.pkl'

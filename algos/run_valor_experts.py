@@ -35,11 +35,13 @@ cyan_expert = Expert(config_name='cyan',
 
 marigold_expert = Expert(config_name='marigold',
                 record_samples=True, actor_critic=MLPActorCritic,
-                ac_kwargs=dict(hidden_sizes=[128] * 4), seed=0)
+                ac_kwargs=dict(hidden_sizes=[128] * 4), seed=0) #444   ## Seed here helps reset initialization for
+# episodes for the perfect set of trajectories
+
 
 rose_expert = Expert(config_name='rose',
                 record_samples=True,  actor_critic=MLPActorCritic,
-                ac_kwargs=dict(hidden_sizes=[128] * 4), seed=0)
+                ac_kwargs=dict(hidden_sizes=[128] * 4), seed=123)   # 123
 
 # Get pre-saved trajectories
 # # cyan
@@ -60,13 +62,14 @@ rose_memory = rose_expert.memory
 print("replay buffers fetched")
 
 # # Run simulation to collect demonstrations (just a gut-check here)
-# marigold_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=15,
-#                                replay_buffer_size=10000)
+# marigold_expert.run_expert_sim(env=env, get_from_file=False,
+#                                max_cost=200, min_reward=20,
+#                                expert_episodes=15,  replay_buffer_size=10000)  ## TOD0: change back to 15
 # marigold_rb = marigold_expert.replay_buffer
 # marigold_memory = marigold_expert.memory
 
-# rose_expert.run_expert_sim(env=env, get_from_file=False, expert_episodes=15,
-#                                replay_buffer_size=10000)
+# rose_expert.run_expert_sim(env=env, get_from_file=False, max_cost=10, min_reward=-10,
+#                            expert_episodes=15, replay_buffer_size=10000)
 # rose_rb = rose_expert.replay_buffer
 # rose_memory = rose_expert.memory
 
@@ -111,9 +114,8 @@ logger_kwargs = setup_logger_kwargs('pure-valor-expts', 0)
 
 logger_kwargs = setup_logger_kwargs('value-valor-expts', 0)
 
-
 ep_len_config = 1000
-#
+
 # value_valor(lambda: gym.make(ENV_NAME),
 #            disc=ValorDiscriminator,
 #            dc_kwargs=dict(hidden_dims=[128] * 4),
@@ -143,24 +145,39 @@ ep_len_config = 1000
 #            replay_buffers=[marigold_rb, rose_rb],
 #            memories=[marigold_memory, rose_memory])
 
-#
+
 logger_kwargs = setup_logger_kwargs('vanilla-valor-expts', 0)
 
 vanilla_valor(lambda: gym.make(ENV_NAME),
-           dc_kwargs=dict(hidden_dims=[128] * 4),
-           seed=444,
+           # dc_kwargs=dict(hidden_dims=[128] * 4),
+           seed=0,
            # seed=123,
+           vaelor_kwargs=dict(encoder_hidden=[50],
+                              # lambda_hidden=[5]*2,
+                              lambda_hidden=[25],
+                              decoder_hidden=[200]*2),   # broader but not deeper decoder for better steering and identification
+           annealing_kwargs=dict(start=0., stop=1., n_cycle=10000, ratio=0.5),
            episodes_per_epoch=15,   # fix reward accumulation
            max_ep_len=ep_len_config,
-           epochs=5000,
+           epochs=50000,
+           # epochs=50,
            # vae_lr=3e-4,   # Karpathy Konstant   (apparently too high for my needs currently)
-           vae_lr=0.025, # optimal rate    # seems like a learning rate this high (around 0.2) is okay???
+           vae_lr=0.025,    # optimal rate    # seems like a learning rate this high (around 0.2) is okay??? This honestly works with new model.
            train_batch_size=10,    # context loss seems to stall at 0.6-0.7 regardless of batch size. If you add some constant, e.g. 0.5, it will stay there, e.g. 1.2
-           train_valor_iters=1,  # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
+           # train_valor_iters=1,  # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
            eval_batch_size=100,
            logger_kwargs=logger_kwargs,
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
+
+
+# Expts to run:
+# Vary network size
+# Vary beta schedule
+# Vary learning rates
+#
+# Use the labels from VQ to reconstruct state.
+# Explore visualization schemes
 
 
 # It seems that doing 50 epochs is the best regime. Freezing this config for (later)
