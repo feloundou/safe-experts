@@ -127,35 +127,34 @@ def vanilla_valor(env_fn,
 
         print("Expert IDs: ", sampled_experts)
 
-        # Train the VAE encoder and decoder
-        # for i in range(train_valor_iters):  # original
-            # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
-            #                                                                      actions_batch, c_onehot)
-
-        loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
-                                                                             actions_batch, o_onehot, con_dim, kl_beta_schedule[epoch])
 
         # loss, recon_loss, context_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
-        #                                                                      actions_batch, o_tensor, con_dim,
-        #                                                                      kl_beta_schedule[epoch])
+        #                                                                      actions_batch, o_onehot, con_dim, kl_beta_schedule[epoch])
+
+        loss, recon_loss, _, _ = valor_vae.compute_latent_loss(raw_states_batch, delta_states_batch,
+                                                                             actions_batch, o_onehot, con_dim,
+                                                                             kl_beta_schedule[epoch])
+
 
         vae_optimizer.zero_grad()
         loss.mean().backward()
         vae_optimizer.step()
 
-        valor_l_new, recon_l_new, context_l_new = loss.mean().data.item(), recon_loss.mean().data.item(), context_loss.mean().data.item()
+        valor_l_new, recon_l_new = loss.mean().data.item(), recon_loss.mean().data.item()
         # valor_l_new, recon_l_new, context_l_new = total_loss, recon_loss, vq_loss
 
-        vaelor_metrics = {'VALOR Loss': valor_l_new, 'Recon Loss': recon_l_new, 'Context Loss': context_l_new, "KL Beta": kl_beta_schedule[epoch]}
+        vaelor_metrics = {'VALOR Loss': valor_l_new, 'Recon Loss': recon_l_new, "KL Beta": kl_beta_schedule[epoch]}
         wandb.log(vaelor_metrics)
 
-        logger.store(VALORLoss=valor_l_new, PolicyLoss=recon_l_new, ContextLoss=context_l_new,
+        logger.store(VALORLoss=valor_l_new, PolicyLoss=recon_l_new,
+                     # ContextLoss=context_l_new,
                      DeltaValorLoss=valor_l_new-valor_l_old, DeltaPolicyLoss=recon_l_new-recon_l_old,
-                     DeltaContextLoss=context_l_new-context_l_old
+                     # DeltaContextLoss=context_l_new-context_l_old
                      )
 
         # logger.store(VALORLoss = d_loss)
-        valor_l_old, recon_l_old, context_l_old = valor_l_new, recon_l_new, context_l_new
+        valor_l_old, recon_l_old = valor_l_new, recon_l_new
+            # , context_l_new
 
         if (epoch % save_freq == 0) or (epoch == epochs - 1):
             logger.save_state({'env': env}, [valor_vae], None)
@@ -165,7 +164,7 @@ def vanilla_valor(env_fn,
         logger.log_tabular('EpochBatchSize', train_batch_size)
         logger.log_tabular('VALORLoss', average_only=True)
         logger.log_tabular('PolicyLoss', average_only=True)
-        logger.log_tabular('ContextLoss', average_only=True)
+        # logger.log_tabular('ContextLoss', average_only=True)
         # logger.log_tabular('DeltaValorLoss', average_only=True)
         # logger.log_tabular('DeltaPolicyLoss', average_only=True)
         # logger.log_tabular('DeltaContextLoss', average_only=True)
@@ -177,7 +176,7 @@ def vanilla_valor(env_fn,
 #########
     # Run eval
     print("RUNNING Classification EVAL")
-    print("Total episodes per expert: ", N_expert)
+
     valor_vae.eval()
     fake_c = context_dist.sample()
     fake_c_onehot = F.one_hot(fake_c, con_dim).squeeze().float()
@@ -185,25 +184,16 @@ def vanilla_valor(env_fn,
     fake_o = context_dist.sample((eval_batch_size*2,))
     fake_o_onehot = F.one_hot(fake_o, con_dim).squeeze().float()
 
-    print("FAKE O: ", fake_o_onehot)
-
     # Randomize and fetch an evaluation sample
     eval_raw_states_batch, eval_delta_states_batch, eval_actions_batch, eval_sampled_experts = \
          mem.eval_batch(N_expert, eval_batch_size, episodes_per_epoch)
 
     # Pass through VAELOR
-    loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
+    loss, recon_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch, eval_delta_states_batch,
                                                                                  eval_actions_batch, fake_o_onehot, con_dim)
 
-    # loss, recon_loss, context_loss, _, latent_v = valor_vae.compute_latent_loss(eval_raw_states_batch,
-    #                                                                             eval_delta_states_batch,
-    #                                                                             eval_actions_batch, fake_o, con_dim)
-    # print("Latent V: ", latent_v)
     vq_mode = True
     if vq_mode == True:
-        # print("PREDICTIONS: ", latent_v)
-        # latent_v[latent_v == 4] = 1 # vqvae indicates with 4, for some reason.  (try with all categories)
-        # print("again: ", latent_v)
         predicted_expert_labels = latent_v
     else:
         predicted_expert_labels = np.argmax(latent_v, axis=1)  # convert from one-hot (if not quantized)
@@ -222,7 +212,7 @@ def vanilla_valor(env_fn,
     # (for now, selecting first episode in first memory)
     # pick some arbitary  episode starting point. Where does the episode start, and follow the episode for
 
-    eval_observations, eval_actions, _, _ = memories[0].sample()
+    eval_observations, eval_actions, _, _ = memories[0].sample()    # 0th episode. Look at 0 or 1. TODO: Use both types of memories here.
     one_ep_states, one_ep_actions = eval_observations[:1000], eval_actions[:1000]
     x_actions, y_actions = map(list, zip(*one_ep_actions))
 
@@ -237,14 +227,6 @@ def vanilla_valor(env_fn,
     # Collect learner experiences, give the network a state observation and a fixed label tensor
     expert_idx_list = np.arange(10)
     print("expert indices", expert_idx_list)
-    # expert_idx_one_hot = [F.one_hot(torch.as_tensor(i), 10) for i in expert_idx_list]
-    # ## TODO: Change this 10 to con_dim (for now con_dim conflicts with categorical posteriors)
-    # print("one hot experts: ", expert_idx_one_hot)
-
-    # learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], F.one_hot(torch.as_tensor(0), con_dim).float(), \
-    #                                             F.one_hot(torch.as_tensor(1), con_dim).float()  # TODO: vary tensor_tag
-
-    learner_actions0, learner_actions1, tensor_tag0, tensor_tag1 = [], [], torch.as_tensor(0), torch.as_tensor(1)  # TODO: vary tensor_tag
 
     LearnerActions = [[] for i in range(10)]
     ExpertTypeTensors = [torch.reshape(torch.as_tensor(i), (-1,)) for i in expert_idx_list]

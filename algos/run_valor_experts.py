@@ -152,17 +152,16 @@ vanilla_valor(lambda: gym.make(ENV_NAME),
            # dc_kwargs=dict(hidden_dims=[128] * 4),
            seed=0,
            # seed=123,
-           vaelor_kwargs=dict(encoder_hidden=[50],
-                              # lambda_hidden=[5]*2,
-                              lambda_hidden=[25],
-                              decoder_hidden=[200]*2),   # broader but not deeper decoder for better steering and identification
-           annealing_kwargs=dict(start=0., stop=1., n_cycle=10000, ratio=0.5),
+           vaelor_kwargs=dict(encoder_hidden=[500],
+                              lambda_hidden=[20],
+                              decoder_hidden=[2000]),   # broader but not deeper decoder for better steering and identification
+           annealing_kwargs=dict(start=0., stop=1., n_cycle=500, ratio=0.5),  # 10000 cycles
            episodes_per_epoch=15,   # fix reward accumulation
            max_ep_len=ep_len_config,
-           epochs=50000,
+           epochs=10000,
            # epochs=50,
+           vae_lr=5e-5,  # Learning rate appears to be the most important hyperparameter right now. The smaller the better.
            # vae_lr=3e-4,   # Karpathy Konstant   (apparently too high for my needs currently)
-           vae_lr=0.025,    # optimal rate    # seems like a learning rate this high (around 0.2) is okay??? This honestly works with new model.
            train_batch_size=10,    # context loss seems to stall at 0.6-0.7 regardless of batch size. If you add some constant, e.g. 0.5, it will stay there, e.g. 1.2
            # train_valor_iters=1,  # seems this should not be too high, maybe max 50. overfitting? roughly 2x batch size
            eval_batch_size=100,
@@ -170,6 +169,9 @@ vanilla_valor(lambda: gym.make(ENV_NAME),
            replay_buffers=[marigold_rb, rose_rb],
            memories=[marigold_memory, rose_memory])
 
+
+# Current best run for context: https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/1u7n21ay?workspace=user-feloundou; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/ktvvbo8b?workspace=user-feloundou; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/rxk5p6bf?workspace=user-feloundou; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/1vk2vs8n?workspace=user-feloundou; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/3v6n0dhl?workspace=user-feloundou
+# Current best run for steering: https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/38vpg5fd; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/3vggga77; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/2ik1tvyf; https://wandb.ai/openai-scholars/VQ%20VAELOR/runs/1qbgfcfm?workspace=user-feloundou
 
 # Expts to run:
 # Vary network size
