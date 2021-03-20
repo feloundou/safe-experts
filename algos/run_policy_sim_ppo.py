@@ -15,7 +15,7 @@ import numpy as np
 # from safety_gym.envs.engine import Engine
 
 
-def load_policy_and_env(fpath, itr='last', deterministic=False):
+def load_policy_and_env(fpath, itr='last', deterministic=False, type='ppo'):
     """
     Load a policy from save along with RL env.
     Not exceptionally future-proof, but it will suffice for basic uses of the
@@ -41,7 +41,7 @@ def load_policy_and_env(fpath, itr='last', deterministic=False):
         itr = '%d' % itr
 
     # load the get_action function
-    get_action = load_pytorch_policy(fpath, itr, deterministic)
+    get_action = load_pytorch_policy(fpath, itr, deterministic, type=type)
 
     # try to load environment from save
     # (sometimes this will fail because the environment could not be pickled)
@@ -56,20 +56,38 @@ def load_policy_and_env(fpath, itr='last', deterministic=False):
     return env, get_action
 
 
-def load_pytorch_policy(fpath, itr, deterministic=False):
+def load_pytorch_policy(fpath, itr, deterministic=False, type='ppo'):
     """ Load a pytorch policy saved with Spinning Up Logger."""
 
     fname = osp.join(fpath, 'pyt_save', 'model' + itr + '.pt')
     print('\n\nLoading from %s.\n\n' % fname)
 
     model = torch.load(fname)
+    print("Model Loaded!", model)
+
+    if type=='memo':
+        def get_action(x,c):
+            with torch.no_grad():
+                x = torch.as_tensor(x, dtype=torch.float32)
+                # print("X is: ", x)
+                # print("Internal model is: ", model[0])
+                vaelor=model[0]
+                action = vaelor.act(x, c)
+            return action
+    else:
+        def get_action(x):
+            with torch.no_grad():
+                x = torch.as_tensor(x, dtype=torch.float32)
+                # print("X is: ", x)
+                # print("Internal model is: ", model)
+                action = model.act(x)
+
+            return action
 
     # make function for producing an action given a single state
-    def get_action(x):
-        with torch.no_grad():
-            x = torch.as_tensor(x, dtype=torch.float32)
-            action = model.act(x)
-        return action
+
+    # # investigate accuracy of normal distributions
+
 
     return get_action
 
@@ -204,15 +222,15 @@ if __name__ == '__main__':
     # the safe trained file is ppo_500e_8hz_cost5_rew1_lim25
 
     # file_name = 'ppo_500e_8hz_cost5_rew1_lim25'
-    # file_name = 'ppo_penalized_test'  # second best
+    file_name = 'ppo_penalized_test'  # second best
     # file_name = 'ppo_penalized_cyan_500ep_8000steps'   # best so far
     # file_name = 'cpo_500e_8hz_cost1_rew1_lim25'  # unconstrained
     config_name = 'cyan'
-    file_name = 'ppo_penalized_' + config_name + '_20Ks_1Ke_128x4'
+    # file_name = 'ppo_penalized_' + config_name + '_20Ks_1Ke_128x4'
     # file_name = 'ppo_penalized_cyan_20Ks_1Ke_128x4'
 
 
-    base_path = '/home/tyna/Documents/openai/research-project/data/'
+    base_path = '/home/tyna/Documents/safe-experts/data/'
     expert_path = '/home/tyna/Documents/openai/research-project/expert_data/'
 
 
@@ -221,10 +239,14 @@ if __name__ == '__main__':
                                         args.itr if args.itr >= 0 else 'last',
                                         args.deterministic)
 
+    print("Get action: ", get_action)
+
     env = gym.make('Safexp-PointGoal1-v0')
     # run_policy(env, get_action, args.len, args.episodes, not (args.norender), record=False, data_path=base_path, config_name='cyan', max_len_rb)
 
-    run_policy(env, get_action, args.len, args.episodes, False, record=True, data_path=expert_path, config_name=config_name, max_len_rb=10000)
+    # run_policy(env, get_action, args.len, args.episodes, False, record=True, data_path=expert_path, config_name=config_name, max_len_rb=10000)
+    run_policy(env, get_action, args.len, args.episodes, True, record=True, data_path=expert_path,
+               config_name=config_name, max_len_rb=10000)
 
 
 

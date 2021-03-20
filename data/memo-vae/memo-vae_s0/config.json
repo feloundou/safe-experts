@@ -1,0 +1,66 @@
+{
+    "annealing_kwargs":	{
+        "n_cycle":	1000,
+        "ratio":	0.5,
+        "start":	0.0,
+        "stop":	1.0
+    },
+    "composite_name":	"10000epochs_10batch_[500]enc_[250, 250]dec",
+    "config_name":	"standard",
+    "env_fn":	"<function <lambda> at 0x7f1fa8554700>",
+    "episodes_per_epoch":	15,
+    "epochs":	10000,
+    "eval_batch_size":	100,
+    "exp_name":	"memo-vae",
+    "logger":	{
+        "<utils.EpochLogger object at 0x7f1fc4d0b5e0>":	{
+            "epoch_dict":	{},
+            "exp_name":	"memo-vae",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/tyna/Documents/safe-experts/data/memo-vae/memo-vae_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/tyna/Documents/safe-experts/data/memo-vae/memo-vae_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"memo-vae",
+        "output_dir":	"/home/tyna/Documents/safe-experts/data/memo-vae/memo-vae_s0"
+    },
+    "max_ep_len":	1000,
+    "memories":	[
+        {
+            "<buffer_torch.Buffer object at 0x7f1fc4cb5940>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f1fc4cb5970>\n <buffer_torch.Trajectory object at 0x7f1fa795f8b0>\n <buffer_torch.Trajectory object at 0x7f1fa74f40a0>\n <buffer_torch.Trajectory object at 0x7f1fa70836d0>\n <buffer_torch.Trajectory object at 0x7f1fa6c10dc0>\n <buffer_torch.Trajectory object at 0x7f1fa67264f0>\n <buffer_torch.Trajectory object at 0x7f1fa62b5be0>\n <buffer_torch.Trajectory object at 0x7f1fa5e430d0>\n <buffer_torch.Trajectory object at 0x7f1fa5555a00>\n <buffer_torch.Trajectory object at 0x7f1fa50e5070>\n <buffer_torch.Trajectory object at 0x7f1fa4c7a820>\n <buffer_torch.Trajectory object at 0x7f1fa480e0d0>\n <buffer_torch.Trajectory object at 0x7f1fa431c640>\n <buffer_torch.Trajectory object at 0x7f1fa3eabd30>\n <buffer_torch.Trajectory object at 0x7f1fa3a41460>]"
+            }
+        },
+        {
+            "<buffer_torch.Buffer object at 0x7f1fc4cb5790>":	{
+                "trajectories":	"[<buffer_torch.Trajectory object at 0x7f1fc4cb5730>\n <buffer_torch.Trajectory object at 0x7f1fa7273be0>\n <buffer_torch.Trajectory object at 0x7f1fa68ee040>\n <buffer_torch.Trajectory object at 0x7f1fa45e3910>\n <buffer_torch.Trajectory object at 0x7f1fa657a070>\n <buffer_torch.Trajectory object at 0x7f1fa3944820>\n <buffer_torch.Trajectory object at 0x7f1fa4c52040>\n <buffer_torch.Trajectory object at 0x7f1fa5a9c640>\n <buffer_torch.Trajectory object at 0x7f1fa5675d30>\n <buffer_torch.Trajectory object at 0x7f1fa5eb45b0>\n <buffer_torch.Trajectory object at 0x7f1fa82dab50>\n <buffer_torch.Trajectory object at 0x7f1fa3560040>\n <buffer_torch.Trajectory object at 0x7f1fa30f4970>\n <buffer_torch.Trajectory object at 0x7f1fa2c89160>\n <buffer_torch.Trajectory object at 0x7f1fa2799790>]"
+            }
+        }
+    ],
+    "replay_buffers":	[
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f1fa8557250>",
+        "<cpprb.PyReplayBuffer.ReplayBuffer object at 0x7f1fc4cb6eb0>"
+    ],
+    "save_freq":	10,
+    "seed":	0,
+    "train_batch_size":	10,
+    "train_valor_iters":	5,
+    "vae":	"VAELOR",
+    "vae_lr":	1e-05,
+    "vaelor_kwargs":	{
+        "decoder_hidden":	[
+            250,
+            250
+        ],
+        "encoder_hidden":	[
+            500
+        ]
+    }
+}

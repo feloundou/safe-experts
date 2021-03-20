@@ -246,12 +246,10 @@ class BehavioralClone(Clone):
             total_loss = 0
 
             for t in range(train_iters):
-
                 # Sample from the replay buffer
                 SAMPLE = self.replay_buffer.sample(batch_size)
 
-                # Observe states and chosen actions from expert seems rewards and
-                # costs are not relevant here since clone will not receive them
+                # Observe states and chosen actions from expert
                 states = SAMPLE['obs']
                 actions = SAMPLE['act']
 

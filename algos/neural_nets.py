@@ -613,14 +613,23 @@ class VAE_Decoder(nn.Module):
         self.pi = MLPGaussianActor(in_dim, out_dim, hidden, activation)
 
     def forward(self, x):
-        return self.pi._distribution(x)
+        with torch.no_grad():              # no backprop necessary. Also really useful for getting the right distribution.
+            self.dist = self.pi._distribution(x)
+        return self.dist
+
+
+
+class VanillaVALOR:
+    """Reimplement old valor model with new fixes"""
+    pass
 
 
 class VAELOR(torch.nn.Module):
 
     # Iterate batches once through the model (prevent overfitting data that is of fickle nature)
 
-    def __init__(self, obs_dim, latent_dim, out_dim, encoder_hidden, lambda_hidden, decoder_hidden):
+    # def __init__(self, obs_dim, latent_dim, out_dim, encoder_hidden, lambda_hidden, decoder_hidden):
+    def __init__(self, obs_dim, latent_dim, out_dim, encoder_hidden, decoder_hidden):
         super(VAELOR, self).__init__()
         """
         Given input tensor, forward prop to get context samples, raw state and state differences. 
@@ -630,14 +639,10 @@ class VAELOR(torch.nn.Module):
         """
         encoder_sizes = [obs_dim] + encoder_hidden
 
-        ## NOTE: The Tanh activation function really influences learned actions.
-        ## Making the decoder less deep improves it.
-
-        # TODO: Try squared components of each action (to get distance) + sum (to get sign)
-        self.num_embeddings = 10 #10  # latent dimension
-        # num_embeddings = 2  # 10  # latent dimension
+        self.num_embeddings = 10 #10  # latent dimension   # num_embeddings = 2  # 10  # latent dimension
         self.embedding_dim = obs_dim
         self.vq_encoder = VQEncoder(obs_dim, encoder_sizes[-1])  # original
+
         self.prenet = nn.Linear(encoder_sizes[-1], self.embedding_dim)
         self.vector_quantizer = VectorQuantizer(self.num_embeddings, self.embedding_dim)
         self.postnet = nn.Linear(self.embedding_dim, encoder_sizes[-1])
@@ -648,7 +653,7 @@ class VAELOR(torch.nn.Module):
         # self.lmbd = Lambda(hidden_dim=encoder_sizes[-1], hidden_sizes=lambda_hidden, con_dim=latent_dim)  # removing lambda one
 
         # self.decoder = VAE_Decoder(obs_dim + latent_dim, decoder_hidden, out_dim, activation=nn.Tanh)  #original
-        self.decoder = VAE_Decoder(obs_dim + 1, decoder_hidden, out_dim, activation=nn.Tanh)  # TODO change back to tanh
+        self.decoder = VAE_Decoder(obs_dim + 1, decoder_hidden, out_dim, activation=nn.Tanh)
         # self.decoder = VAE_Decoder(obs_dim + self.num_embeddings, decoder_hidden, out_dim, activation=nn.Tanh)  # change back
 
     def forward(self, state, delta_state, con_dim):
@@ -664,13 +669,7 @@ class VAELOR(torch.nn.Module):
 
     def compute_quantized_loss(self, state, delta_state, actions, con_dim):
         delta_state_enc = self.vq_encoder(delta_state)
-        # latent_vq_dist = self.lmbd(delta_state_enc)   # removing lambda
-        # latent_labels_test = latent_vq_dist.sample()
-        # print("VQ dist sample: ", latent_labels_test)
-        # print("Quantized Latent Labels", latent_labels)
-
         encoder_output = self.prenet(delta_state_enc)
-        # print("Prenet output: ", encoder_output)
         quantized, categorical_proposal = self.vector_quantizer(encoder_output)
 
         # Straight Through Estimator (Some Magic)
@@ -689,6 +688,12 @@ class VAELOR(torch.nn.Module):
         return encoder_output, quantized, reconstruction, categorical_proposal, action_vq_dist
         # removing latent_vq_dist for lambda
 
+    def act(self, state, context_label):
+        concat_state_vq = torch.cat([state, torch.reshape(torch.as_tensor(context_label), (-1,))], dim=-1)
+        action_vq_dist = self.decoder(concat_state_vq)
+        action = action_vq_dist.sample()
+        return action
+
 
     def compute_latent_loss(self, X, Delta_X, A, context_sample, con_dim, kl_beta=1.):
         """
@@ -705,27 +710,15 @@ class VAELOR(torch.nn.Module):
         encoder_output, quantized, reconstruction, vq_latent_labels, action_vq_dist =\
             self.compute_quantized_loss(X, Delta_X, A, con_dim)
 
-        # action_dist, latent_labels, latent_labels_dist = self(X, Delta_X, con_dim)  # restore
-        # action_dist, latent_labels, latent_labels_dist, latent_loss = self(X, Delta_X, con_dim)
-
         vq_criterion = VQCriterion(beta=kl_beta)
         total_loss, recons_loss, vq_loss, commitment_loss = vq_criterion(Delta_X, encoder_output, quantized, reconstruction)
-
-        # context_loss = - latent_labels_dist.log_prob(context_sample) # this is the correct version  ##
-        # context_loss = -latent_vq_dist.log_prob(context_sample)  # this is the correct version  ##  # removing lambda
 
         # original formula
         # recon_loss = total_loss * torch.exp(action_dist.log_prob(A).sum(axis=-1))*kl_beta # 0.00001 makes context loss increase slightly
         recon_loss = torch.exp(action_vq_dist.log_prob(A).sum(axis=-1))  #kl_beta*kl_beta # 0.00001 makes context loss increase slightly
-        recon_loss2 = torch.exp(action_vq_dist.log_prob(A).sum(axis=-1))
         vq_cat_loss = total_loss*kl_beta
 
-
-        # print("context loss: ", context_loss)
-        print("recon loss: ", recon_loss)
-        # loss = recon_loss * context_loss
         loss = recon_loss * vq_cat_loss
-        print("loss: ", loss)
 
         # return loss, recon_loss, context_loss, X, latent_labels
         return loss, recon_loss, X, vq_latent_labels
@@ -765,7 +758,7 @@ class Clamper(nn.Module):
         return torch.clamp(input, self.min, self.max)
 
 class VQDecoder(nn.Module):
-    def __init__(self, obs_dim: int, hidden_size: int,):
+    def __init__(self, obs_dim, hidden_size):
         super().__init__()
 
         self.net = nn.Sequential(
@@ -785,19 +778,18 @@ class VQDecoder(nn.Module):
 
 class VectorQuantizer(nn.Module):
 
-    def __init__( self, num_embeddings: int, embedding_dim: int) -> None:
+    def __init__(self, num_embeddings, embedding_dim):
         super().__init__()
 
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
-
         self.embeddings = nn.Embedding(num_embeddings, embedding_dim)
 
         self.scale = 1. / self.num_embeddings
         print("Quantizer Scale: ", self.scale)
         torch.nn.init.uniform_(self.embeddings.weight, -self.scale, self.scale)
 
-    def proposal_distribution(self, input: torch.Tensor):
+    def proposal_distribution(self, input):
         input_shape = input.shape
 
         flatten_input = input.flatten(end_dim=-2).contiguous()
@@ -811,9 +803,8 @@ class VectorQuantizer(nn.Module):
 
         return categorical_posterior
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
+    def forward(self, input):
         proposal = self.proposal_distribution(input)
-
         quantized = self.embeddings(proposal).contiguous()
 
         return quantized, proposal
@@ -837,65 +828,59 @@ class VQCriterion(nn.Module):
         vq_loss = F.mse_loss(flatten_encoder_output.detach(), flatten_quantized)
         commitment_loss = F.mse_loss(flatten_encoder_output, flatten_quantized.detach())
 
-        total_loss = reconstruction_loss + vq_loss + self.beta * commitment_loss
+        # total_loss = reconstruction_loss + vq_loss + self.beta * commitment_loss   # Original. TODO: review this loss.
+        # total_loss = reconstruction_loss + self.beta * commitment_loss
+        total_loss = vq_loss + self.beta * commitment_loss
 
         return total_loss, reconstruction_loss, vq_loss, commitment_loss
 
-
-class VQVAELOR(nn.Module):
-    """
-    https://arxiv.org/abs/1711.00937
-    """
-
-    def __init__(
-        self,
-        obs_dim: int,
-        hidden_dim: int,
-        out_dim: int,
-        num_embeddings: int,
-        embedding_dim: int,
-    ) -> None:
-        super().__init__()
-
-        in_dim = obs_dim
-        hidden_dim = 20
-
-        latent_dim = 2
-
-        self.encoder = VQEncoder(in_dim, hidden_dim)
-        self.decoder = VQDecoder(hidden_dim, out_dim)
-        self.vector_quantizer = VectorQuantizer(num_embeddings, embedding_dim)
-
-        self.prenet = nn.Linear(hidden_dim, latent_dim)
-        self.postnet = nn.Linear(latent_dim, hidden_dim)
-
-        # self.prenet = nn.Conv2d(hidden_channels, embedding_dim, kernel_size=1)
-        # self.postnet = nn.Conv2d(embedding_dim, hidden_channels, kernel_size=3, padding=1)
-
-    def encode(self, input: torch.Tensor) -> torch.Tensor:
-        encoder_output = self.encoder(input)
-        encoder_output = self.prenet(encoder_output)
-        quantized = self.vector_quantizer(encoder_output)
-
-        return quantized
-
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
-        encoder_output = self.encoder(input)
-        encoder_output = self.prenet(encoder_output)
-
-        quantized = self.vector_quantizer(encoder_output)
-
-        # Straight Through Estimator (Some Magic)
-        st_quantized = encoder_output + (quantized - encoder_output).detach()
-        post_quantized = self.postnet(st_quantized)
-
-        reconstruction = self.decoder(post_quantized)
-
-        return encoder_output, quantized, reconstruction
-
-    @torch.no_grad()
-    def generate(self, prior):
-        raise NotImplementedError()
+#
+# class VQVAELOR(nn.Module):
+#     """
+#     https://arxiv.org/abs/1711.00937
+#     """
+#     def __init__(self, obs_dim, hidden_dim, out_dim,  num_embeddings, embedding_dim):
+#         super().__init__()
+#
+#         in_dim = obs_dim
+#         hidden_dim = 20
+#
+#         latent_dim = 2
+#
+#         self.encoder = VQEncoder(in_dim, hidden_dim)
+#         self.decoder = VQDecoder(hidden_dim, out_dim)
+#         self.vector_quantizer = VectorQuantizer(num_embeddings, embedding_dim)
+#
+#         self.prenet = nn.Linear(hidden_dim, latent_dim)
+#         self.postnet = nn.Linear(latent_dim, hidden_dim)
+#
+#         # self.prenet = nn.Conv2d(hidden_channels, embedding_dim, kernel_size=1)
+#         # self.postnet = nn.Conv2d(embedding_dim, hidden_channels, kernel_size=3, padding=1)
+#
+#     def encode(self, input: torch.Tensor) -> torch.Tensor:
+#         encoder_output = self.encoder(input)
+#         encoder_output = self.prenet(encoder_output)
+#         quantized = self.vector_quantizer(encoder_output)
+#
+#         return quantized
+#
+#     def forward(self, input: torch.Tensor) -> torch.Tensor:
+#         encoder_output = self.encoder(input)
+#         encoder_output = self.prenet(encoder_output)
+#
+#         quantized = self.vector_quantizer(encoder_output)
+#
+#         # Straight Through Estimator (Some Magic)
+#         st_quantized = encoder_output + (quantized - encoder_output).detach()
+#         post_quantized = self.postnet(st_quantized)
+#
+#         reconstruction = self.decoder(post_quantized)
+#
+#         return encoder_output, quantized, reconstruction
+#
+#     @torch.no_grad()
+#     def generate(self, prior):
+#         raise NotImplementedError()
 
 
 
